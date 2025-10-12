@@ -135,7 +135,21 @@ FOREIGN KEY ("library_class_id")
 CREATE INDEX "index_library_sessions_on_library_class_id" ON "library_sessions" ("library_class_id");
 CREATE INDEX "index_library_sessions_on_vimeo_id" ON "library_sessions" ("vimeo_id");
 CREATE INDEX "index_library_sessions_on_position" ON "library_sessions" ("position");
+CREATE TABLE IF NOT EXISTS "library_categories" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "name" varchar NOT NULL, "slug" varchar NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
+CREATE UNIQUE INDEX "index_library_categories_on_slug" ON "library_categories" ("slug");
+CREATE TABLE IF NOT EXISTS "library_classes_categories" ("library_class_id" integer NOT NULL, "library_category_id" integer NOT NULL, CONSTRAINT "fk_rails_ed72d5b607"
+FOREIGN KEY ("library_class_id")
+  REFERENCES "library_classes" ("id")
+, CONSTRAINT "fk_rails_673d729ea7"
+FOREIGN KEY ("library_category_id")
+  REFERENCES "library_categories" ("id")
+);
+CREATE INDEX "index_library_classes_categories_on_library_class_id" ON "library_classes_categories" ("library_class_id");
+CREATE INDEX "index_library_classes_categories_on_library_category_id" ON "library_classes_categories" ("library_category_id");
+CREATE UNIQUE INDEX "index_library_classes_categories_on_class_and_category" ON "library_classes_categories" ("library_class_id", "library_category_id");
 INSERT INTO "schema_migrations" (version) VALUES
+('20251011174948'),
+('20251011174942'),
 ('20251011060050'),
 ('20251011060045'),
 ('20250928120000'),
