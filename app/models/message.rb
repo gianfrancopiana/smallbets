@@ -26,7 +26,6 @@ class Message < ApplicationRecord
   after_create_commit -> { involve_creator_in_thread }
   after_create_commit -> { update_thread_reply_count }
   after_create_commit -> { update_parent_message_threads }
-  after_create_commit -> { update_parent_room_unread_status }
   after_update_commit -> { involve_mentionees_in_room(unread: false) }
 
   # Clear the all_time_ranks cache when messages are created or deleted
@@ -130,27 +129,6 @@ class Message < ApplicationRecord
 
   def touch_room_activity
     room.touch(:last_active_at)
-  end
-
-  def update_parent_room_unread_status
-    # When a message is posted in a thread, also mark the parent room as unread
-    if room.thread? && room.parent_message
-      parent_room = room.parent_message.room
-      parent_room.send(:unread_memberships, self)
-      parent_room.touch(:last_active_at)
-
-      # Broadcast unread status to all users
-      ActionCable.server.broadcast("unread_rooms", {
-        roomId: parent_room.id,
-        roomSize: parent_room.messages_count,
-        roomUpdatedAt: parent_room.last_active_at.iso8601
-      })
-
-      # Broadcast notifications to mentioned users
-      parent_room.memberships.where(user_id: mentionee_ids).each do |membership|
-        ActionCable.server.broadcast "user_#{membership.user_id}_notifications", { roomId: parent_room.id }
-      end
-    end
   end
 
   private
