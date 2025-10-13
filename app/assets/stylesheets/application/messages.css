@@ -628,11 +628,22 @@ img.message__attachment {
 
 .message__actions-menu {
   --arrow-size: 1.5em;
-  
-  inset: var(--btn-size) auto auto 50%;
-  transform: translateX(-50%);
-  transform-origin: top left;
+
+  inset: var(--btn-size) 0 auto auto;
+  transform-origin: top right;
   z-index: 3;
+
+  &::before {
+    inset-inline-start: auto;
+    inset-inline-end: calc(var(--btn-size) / 2);
+    transform: translateX(0);
+  }
+
+  &::after {
+    inset-inline-start: auto;
+    inset-inline-end: calc(var(--btn-size) / 2);
+    transform: translateX(0);
+  }
 }
 
 .message__avatar-menu {
