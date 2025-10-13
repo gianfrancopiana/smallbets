@@ -79,13 +79,14 @@ module MessagesHelper
     ""
   end
 
-  def message_cache_key(message, room_id: nil, is_first_unread_message: false)
+  def message_cache_key(message, room_id: nil, is_first_unread_message: false, is_parent: false)
     [
       message,
       room_id,
       message.bookmarked_by_current_user?,
       message.creator,
-      is_first_unread_message
+      is_first_unread_message,
+      is_parent
     ]
   end
 

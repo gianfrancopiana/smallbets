@@ -72,10 +72,21 @@ class RoomsController < ApplicationController
       @first_unread_message = messages.ordered.since(@membership.unread_at).first if @membership.unread?
 
       if show_first_message = messages.find_by(id: params[:message_id]) || @first_unread_message
-        @messages = messages.page_around(show_first_message)
+        result = messages.page_around(show_first_message)
       else
-        @messages = messages.last_page
+        result = messages.last_page
       end
+
+      # If this is a thread and we've loaded the very first message, prepend the parent message
+      if @room.thread? && result.any? && @room.parent_message.present?
+        first_thread_message = @room.messages.ordered.first
+        messages_array = result.to_a
+        if messages_array.first.id == first_thread_message.id
+          result = [@room.parent_message] + messages_array
+        end
+      end
+
+      result
     end
 
     def room_params
