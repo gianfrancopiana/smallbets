@@ -149,6 +149,7 @@ Rails.application.routes.draw do
   resource :inbox, only: %i[ show ] do
     member do
       get :mentions
+      get :threads
       get :notifications
       get :messages
       get :bookmarks
@@ -157,6 +158,7 @@ Rails.application.routes.draw do
     end
     scope path: "/paged", as: :paged do
       resources :mentions, only: %i[ index ], controller: "inboxes/mentions"
+      resources :threads, only: %i[ index ], controller: "inboxes/threads"
       resources :notifications, only: %i[ index ], controller: "inboxes/notifications"
       resources :messages, only: %i[ index ], controller: "inboxes/messages"
       resources :bookmarks, only: %i[ index ], controller: "inboxes/bookmarks"
