@@ -186,4 +186,14 @@ class Room < ApplicationRecord
         broadcast_append_to :rooms, target: list_name, partial: "users/sidebars/rooms/shared", locals: { list_name:, room: self }, attributes: { maintain_scroll: true }
       end
     end
+
+    def display_name(for_user: nil)
+      if direct?
+        users.without(for_user).pluck(:name).to_sentence.presence || for_user&.name
+      elsif thread?
+        "🧵 #{parent_message&.room&.name}"
+      else
+        name
+      end
+    end
 end
