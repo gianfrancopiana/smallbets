@@ -108,7 +108,8 @@ class InboxesController < ApplicationController
          LIMIT 1)
       SQL
 
-      base_query = Message.joins(:room)
+      base_query = Message.active
+                          .joins(:room)
                           .where.not(rooms: { type: 'Rooms::Thread' })
                           .where(id: Room.where(id: all_thread_ids, type: 'Rooms::Thread')
                                       .where("messages_count > 0")
