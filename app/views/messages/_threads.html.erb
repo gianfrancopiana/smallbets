@@ -1,0 +1,22 @@
+<% threads = message.threads.to_a.select { |t| (t.messages_count || t.messages.count) > 0 } %>
+<div id="<%= dom_id(message, :threads) %>" class="threads flex align-center gap full-width" style="--column-gap: 0.4ch; --row-gap: 0">
+  <% threads.each do |thread| %>
+    <% # Get participants ordered by when they joined the thread (membership created_at) %>
+    <% participant_memberships = thread.visible_memberships.active.includes(:user).order(created_at: :asc).limit(5).to_a %>
+    <% reply_count = thread.messages_count || thread.messages.count %>
+
+    <%= link_to room_path(thread), class: "thread__link flex-inline align-center gap", target: "_top" do %>
+      <div class="thread__avatars flex-inline gap">
+        <% participant_memberships.each do |membership| %>
+          <figure class="avatar thread__avatar flex-item-no-shrink" data-stop-propagation="true">
+            <%= render 'users/popup', user: membership.user %>
+          </figure>
+        <% end %>
+      </div>
+      <%= pluralize(reply_count, 'reply', 'replies') %>
+      <% if reply_count > 0 %>
+        <span class="txt-muted">Last reply <%= time_ago_in_words(thread.last_active_at) %> ago</span>
+      <% end %>
+    <% end %>
+  <% end %>
+</div>

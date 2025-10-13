@@ -55,7 +55,6 @@ CREATE TABLE IF NOT EXISTS "rooms" ("id" integer PRIMARY KEY AUTOINCREMENT NOT N
 FOREIGN KEY ("parent_message_id")
   REFERENCES "messages" ("id")
 );
-CREATE INDEX "index_rooms_on_parent_message_id" ON "rooms" ("parent_message_id");
 CREATE TABLE IF NOT EXISTS "bookmarks" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "user_id" integer NOT NULL, "message_id" integer NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL, "active" boolean DEFAULT 1, CONSTRAINT "fk_rails_c1ff6fa4ac"
 FOREIGN KEY ("user_id")
   REFERENCES "users" ("id")
@@ -147,7 +146,9 @@ FOREIGN KEY ("library_category_id")
 CREATE INDEX "index_library_classes_categories_on_library_class_id" ON "library_classes_categories" ("library_class_id");
 CREATE INDEX "index_library_classes_categories_on_library_category_id" ON "library_classes_categories" ("library_category_id");
 CREATE UNIQUE INDEX "index_library_classes_categories_on_class_and_category" ON "library_classes_categories" ("library_class_id", "library_category_id");
+CREATE UNIQUE INDEX "index_rooms_on_parent_message_id_unique_thread" ON "rooms" ("parent_message_id") WHERE type = 'Rooms::Thread' AND parent_message_id IS NOT NULL;
 INSERT INTO "schema_migrations" (version) VALUES
+('20251013005410'),
 ('20251011174948'),
 ('20251011174942'),
 ('20251011060050'),

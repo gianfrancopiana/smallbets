@@ -29,7 +29,14 @@
               <%= link_to message_timestamp(message, class: "message__timestamp"), room_at_message_path(message.room, message), target: "_top",
                     class: "message__permalink" %>
               <span class="message__meta-block message__room <%= "message__original-room" if current_room.present? && current_room != message.room %>">
-                <%= link_to room_display_name(message.room, for_user: nil), room_at_message_path(message.room, message), target: "_top", data: { reply_target: "link" } %>
+                <% if current_room.nil? %>
+                  <span class="message__room-in">in</span>
+                <% end %>
+                <% if message.room.thread? && message.room.parent_message %>
+                  <%= link_to "🧵 #{room_display_name(message.room.parent_message.room, for_user: nil)}", room_at_message_path(message.room, message), target: "_top", data: { reply_target: "link" } %>
+                <% else %>
+                  <%= link_to room_display_name(message.room, for_user: nil), room_at_message_path(message.room, message), target: "_top", data: { reply_target: "link" } %>
+                <% end %>
               </span>
               <%= render "messages/answered_by", message: %>
             </h3>
@@ -37,6 +44,7 @@
           </div>
           <%= render "messages/presentation", message: %>
           <%= render "messages/boosts/boosts", message: %>
+          <%= render "messages/threads", message: %>
         </div>
       </div>
     </turbo-frame>

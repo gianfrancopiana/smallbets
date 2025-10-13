@@ -36,11 +36,11 @@ class RoomsController < ApplicationController
       identifier = params[:room_id] || params[:id] || params[:slug]
 
       # Try by numeric id first (preserve existing behavior)
-      room = Current.user.rooms.find_by(id: identifier)
+      room = Current.user.rooms.includes(parent_message: { creator: :avatar_attachment }).find_by(id: identifier)
 
       # Fallback to slug-based lookup when identifier is not a numeric id
       if room.nil?
-        room = Current.user.rooms.find_by(slug: identifier)
+        room = Current.user.rooms.includes(parent_message: { creator: :avatar_attachment }).find_by(slug: identifier)
       end
 
       if room
