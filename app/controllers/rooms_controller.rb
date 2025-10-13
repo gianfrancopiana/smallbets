@@ -77,12 +77,18 @@ class RoomsController < ApplicationController
         result = messages.last_page
       end
 
-      # If this is a thread and we've loaded the very first message, prepend the parent message
-      if @room.thread? && result.any? && @room.parent_message.present?
-        first_thread_message = @room.messages.ordered.first
-        messages_array = result.to_a
-        if messages_array.first.id == first_thread_message.id
-          result = [@room.parent_message] + messages_array
+      # If this is a thread, prepend the parent message when appropriate
+      if @room.thread? && @room.parent_message.present?
+        if result.empty?
+          # Empty thread - show just the parent message
+          result = [@room.parent_message]
+        elsif result.any?
+          # Thread has messages - prepend parent if we're showing the first message
+          first_thread_message = @room.messages.ordered.first
+          messages_array = result.to_a
+          if first_thread_message && messages_array.first.id == first_thread_message.id
+            result = [@room.parent_message] + messages_array
+          end
         end
       end
 
