@@ -3,7 +3,7 @@
 
 <div class="message__actions" data-controller="soft-keyboard">
   <% unless message.room.direct? || current_room&.thread? || message.room.thread? %>
-    <%= button_to rooms_threads_path(parent_message_id: message.id), class: "btn message__action-btn message__options-btn message__reply-btn", form: { data: { turbo: false } } do %>
+    <%= link_to new_rooms_thread_path(parent_message_id: message.id), class: "btn message__action-btn message__options-btn message__reply-btn", data: { turbo: false } do %>
       <%= image_tag "reply.svg", size: 20, class: "colorize--black", aria: { hidden: "true" } %>
       <span class="for-screen-reader">Reply</span>
     <% end %>
@@ -48,7 +48,7 @@
           <% end %>
         <% else %>
           <% unless message.room.direct? || current_room&.thread? || message.room.thread? %>
-            <%= button_to rooms_threads_path(parent_message_id: message.id), class: "btn message__action-btn full-width", form: { data: { turbo: false } } do %>
+            <%= link_to new_rooms_thread_path(parent_message_id: message.id), class: "btn message__action-btn full-width", data: { turbo: false } do %>
               <span>Reply</span>
             <% end %>
           <% end %>

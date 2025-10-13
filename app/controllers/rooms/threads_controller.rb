@@ -1,7 +1,7 @@
 class Rooms::ThreadsController < RoomsController
-  before_action :set_parent_message, only: %i[ create ]
+  before_action :set_parent_message, only: %i[ new ]
 
-  def create
+  def new
     # Check if thread already exists for this message (there can only be one)
     existing_thread = @parent_message.threads.active.find_by(type: 'Rooms::Thread')
 
