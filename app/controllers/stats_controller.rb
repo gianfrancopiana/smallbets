@@ -334,7 +334,8 @@ class StatsController < ApplicationController
     SQL
 
     # Get all open rooms ordered by message count
-    @rooms = Room.select("rooms.*", rooms_message_count_subquery)
+    @rooms = Room.active
+                 .select("rooms.*", rooms_message_count_subquery)
                  .where(type: "Rooms::Open")
                  .group("rooms.id")
                  .order("message_count DESC, rooms.created_at ASC")
