@@ -34,12 +34,11 @@ export default class extends Controller {
   }
 
   updateIndicator() {
-    // Check if there are any rooms with the badge class (unread mentions)
+    // Check if there are any rooms with the badge class (unread mentions) or unread direct messages
     const hasUnreadMentions = this.element.querySelectorAll('.room.badge').length > 0
+    const hasUnreadDirects = this.element.querySelectorAll('.direct.unread').length > 0
 
-    console.log('Mentions indicator update:', hasUnreadMentions, 'badge count:', this.element.querySelectorAll('.room.badge').length)
-
-    if (hasUnreadMentions) {
+    if (hasUnreadMentions || hasUnreadDirects) {
       this.iconTarget.classList.add('has-unread-mentions')
     } else {
       this.iconTarget.classList.remove('has-unread-mentions')
