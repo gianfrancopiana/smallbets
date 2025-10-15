@@ -332,6 +332,11 @@ class StatsService
     {
       total_users: User.where(active: true, suspended_at: nil).count,
       total_messages: Message.count,
+      total_threads: Room.active
+                         .where(type: "Rooms::Thread")
+                         .joins(:messages)
+                         .where("messages.active = ?", true)
+                         .distinct.count,
       total_boosts: Boost.count,
       total_posters: User.active.joins(messages: :room)
                          .where("rooms.type != ?", "Rooms::Direct")

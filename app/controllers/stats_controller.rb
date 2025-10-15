@@ -7,6 +7,7 @@ class StatsController < ApplicationController
     counts = StatsService.total_counts
     @total_users = counts[:total_users]
     @total_messages = counts[:total_messages]
+    @total_threads = counts[:total_threads]
     @total_boosts = counts[:total_boosts]
     @total_posters = counts[:total_posters]
     @online_users = online_users_count
