@@ -34,12 +34,17 @@ export default class extends Controller {
       'a.skip-navigation[href="#sidebar-toggle"]',
     )
     if (skipToMenu) skipToMenu.addEventListener("click", this._handleSkipToMenu)
+
+    // Close sidebar on mobile when navigating to a new page
+    this._handleTurboClick = (event) => this.#handleTurboClick(event)
+    document.addEventListener("turbo:click", this._handleTurboClick)
   }
 
   disconnect() {
     document.removeEventListener("mousedown", this._handleDocumentPointer)
     document.removeEventListener("touchstart", this._handleDocumentPointer)
     document.removeEventListener("keydown", this._handleKeydown)
+    document.removeEventListener("turbo:click", this._handleTurboClick)
     const skipToMenu = document.querySelector(
       'a.skip-navigation[href="#sidebar-toggle"]',
     )
@@ -133,5 +138,21 @@ export default class extends Controller {
       document.body.classList.contains("library-collapsed") &&
       window.matchMedia("(min-width: 120ch)").matches
     )
+  }
+
+  #handleTurboClick(event) {
+    // On mobile (max-width: 120ch), close the sidebar when clicking a link inside it
+    // This ensures the user sees the room content after selecting it
+    if (window.matchMedia("(min-width: 120ch)").matches) return
+    if (!this.element.classList.contains(this.toggleClass)) return
+
+    // Check if the clicked element is a link inside the sidebar
+    const target = event.target
+    const link = target.closest("a[href]")
+    if (!link) return
+    if (!this.element.contains(link)) return
+
+    // Close the sidebar
+    this.element.classList.remove(this.toggleClass)
   }
 }
