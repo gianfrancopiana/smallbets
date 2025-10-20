@@ -1,5 +1,5 @@
 import VideoCard from "../video_card"
-import type { LibrarySessionPayload } from "../../types"
+import type { LibrarySessionPayload, VimeoThumbnailPayload } from "../../types"
 
 export function SessionsShelfRow({
   sessions,
@@ -7,12 +7,14 @@ export function SessionsShelfRow({
   title,
   showProgress = false,
   persistPreview = false,
+  thumbnails,
 }: {
   sessions: LibrarySessionPayload[]
   backIcon?: string
   title?: string
   showProgress?: boolean
   persistPreview?: boolean
+  thumbnails?: Record<string, VimeoThumbnailPayload>
 }) {
   if (sessions.length === 0) return null
 
@@ -42,6 +44,7 @@ export function SessionsShelfRow({
                 backIcon={backIcon}
                 showProgress={showProgress}
                 persistPreview={persistPreview}
+                thumbnail={thumbnails?.[session.vimeoId]}
               />
             </li>
           ))}
