@@ -19,8 +19,8 @@ class User < ApplicationRecord
   def mentioning_messages
     Message.active
       .where(room_id: room_ids)
-      .left_joins(:mentions)
-      .where("mentions.user_id = ? OR messages.mentions_everyone = ?", id, true)
+      .left_joins(:mentions, :room)
+      .where("mentions.user_id = ? OR messages.mentions_everyone = ? OR rooms.type = ?", id, true, "Rooms::Direct")
       .distinct
   end
 
