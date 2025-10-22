@@ -156,7 +156,11 @@ FOREIGN KEY ("user_id")
 );
 CREATE UNIQUE INDEX "index_library_watch_histories_on_session_and_user" ON "library_watch_histories" ("library_session_id", "user_id");
 CREATE INDEX "index_messages_on_room_id_and_mentions_everyone" ON "messages" ("room_id", "mentions_everyone") WHERE mentions_everyone = true;
+CREATE TABLE IF NOT EXISTS "live_events" ("id" integer PRIMARY KEY AUTOINCREMENT NOT NULL, "title" varchar NOT NULL, "url" varchar NOT NULL, "target_time" datetime(6) NOT NULL, "duration_hours" integer DEFAULT 2 NOT NULL, "show_early_hours" integer DEFAULT 24 NOT NULL, "active" boolean DEFAULT 1 NOT NULL, "created_at" datetime(6) NOT NULL, "updated_at" datetime(6) NOT NULL);
+CREATE INDEX "index_live_events_on_active" ON "live_events" ("active");
+CREATE INDEX "index_live_events_on_target_time" ON "live_events" ("target_time");
 INSERT INTO "schema_migrations" (version) VALUES
+('20251022001753'),
 ('20251021014520'),
 ('20251013024845'),
 ('20251013024703'),
