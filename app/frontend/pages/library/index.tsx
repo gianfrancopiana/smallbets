@@ -1,6 +1,7 @@
 import { Head } from "@inertiajs/react"
 import { useEffect, useMemo, useState } from "react"
 
+import FeaturedCarousel from "./components/featured-carousel"
 import LibraryHero from "./components/library_hero"
 import SectionHeader from "./components/layout/section_header"
 import SessionGrid from "./components/session_grid"
@@ -13,6 +14,7 @@ import type {
 
 interface LibraryPageProps {
   continueWatching: LibrarySessionPayload[]
+  featuredSessions: LibrarySessionPayload[]
   sections: LibrarySectionPayload[]
   layout?: LayoutPayload
   initialSessionId?: number | null
@@ -21,6 +23,7 @@ interface LibraryPageProps {
     downloadIcon?: string
   }
   initialThumbnails?: Record<string, VimeoThumbnailPayload>
+  featuredHeroImages?: Record<string, string>
 }
 
 interface LibrarySectionPayload {
@@ -41,10 +44,12 @@ interface CategoryGroup {
 
 export default function LibraryIndex({
   continueWatching,
+  featuredSessions,
   sections,
   layout,
   assets,
   initialThumbnails,
+  featuredHeroImages,
 }: LibraryPageProps) {
   useEffect(() => {
     if (!layout) return
@@ -97,6 +102,7 @@ export default function LibraryIndex({
         ...sections.flatMap((section) =>
           section.sessions.map((session) => session.vimeoId),
         ),
+        ...featuredSessions.map((session) => session.vimeoId),
         ...continueWatching.map((s) => s.vimeoId),
       ]),
     )
@@ -105,8 +111,12 @@ export default function LibraryIndex({
 
     if (allIds.length === 0) return
 
-    // Above-the-fold priority: continue watching + first shelf
+    // Above-the-fold priority: featured + continue watching + first shelf
     const prioritySet = new Set<string>([
+      ...featuredSessions
+        .map((s) => s.vimeoId)
+        .filter(Boolean)
+        .map(String),
       ...continueWatching
         .map((s) => s.vimeoId)
         .filter(Boolean)
@@ -176,36 +186,42 @@ export default function LibraryIndex({
   }, [sections, continueWatching])
 
   return (
-    <div className="bg-background mt-[3vw] min-h-screen py-12 min-[120ch]:pl-[5vw]">
+    <div className="bg-background mt-[3vw] min-h-screen py-12">
       <div className="pb-16">
         <Head title="Library" />
         <h1 className="sr-only">Library</h1>
 
-        <div className="flex flex-col gap-10 pt-12 sm:gap-[3vw]">
-          <LibraryHero
-            continueWatching={continueWatching}
-            backIcon={assets?.backIcon}
-            thumbnails={thumbnails}
+        <div className="flex flex-col gap-10 sm:gap-[3vw]">
+          <FeaturedCarousel
+            sessions={featuredSessions}
+            heroImagesById={featuredHeroImages}
           />
+          <div className="flex flex-col gap-10 min-[120ch]:pl-[5vw] sm:gap-[3vw]">
+            <LibraryHero
+              continueWatching={continueWatching}
+              backIcon={assets?.backIcon}
+              thumbnails={thumbnails}
+            />
 
-          <div className="flex flex-col gap-10 pl-3 sm:gap-[3vw]">
-            {categoryGroups.map((group) => {
-              const headingId = `category-${group.category.slug}`
-              return (
-                <section
-                  className="flex flex-col gap-[1vw]"
-                  key={group.category.slug}
-                  aria-labelledby={headingId}
-                >
-                  <SectionHeader id={headingId} title={group.category.name} />
-                  <SessionGrid
-                    sessions={group.sessions}
-                    backIcon={assets?.backIcon}
-                    thumbnails={thumbnails}
-                  />
-                </section>
-              )
-            })}
+            <div className="flex flex-col gap-10 pl-3 sm:gap-[3vw]">
+              {categoryGroups.map((group) => {
+                const headingId = `category-${group.category.slug}`
+                return (
+                  <section
+                    className="flex flex-col gap-[1vw]"
+                    key={group.category.slug}
+                    aria-labelledby={headingId}
+                  >
+                    <SectionHeader id={headingId} title={group.category.name} />
+                    <SessionGrid
+                      sessions={group.sessions}
+                      backIcon={assets?.backIcon}
+                      thumbnails={thumbnails}
+                    />
+                  </section>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>

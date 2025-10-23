@@ -1,7 +1,7 @@
 module Vimeo
   module ThumbnailFetcher
     API_ROOT = "https://api.vimeo.com".freeze
-    CACHE_VERSION = "v1".freeze
+    CACHE_VERSION = "v2".freeze
     # Hard/Redis TTL: keep entries for a long time to maximize cache hits
     LONG_TTL = 30.days
     # Soft TTL window: after this, entries are considered stale and should be refreshed
@@ -100,13 +100,14 @@ module Vimeo
 
     def fetch_from_vimeo(video_id)
       response = http_client.get("/videos/#{video_id}") do |request|
-        request.params[:fields] = "pictures.base_link,pictures.sizes.link,pictures.sizes.width,pictures.sizes.height"
+        request.params[:fields] = "pictures.base_link,pictures.sizes.link,pictures.sizes.width,pictures.sizes.height,duration"
         request.headers["Accept"] = "application/vnd.vimeo.*+json;version=3.4"
         request.headers["Authorization"] = "Bearer #{access_token}"
       end
 
       payload = JSON.parse(response.body)
       pictures = payload.fetch("pictures") { {} }
+      duration_seconds = payload["duration"].to_i if payload.key?("duration")
       sizes = Array(pictures["sizes"]).filter_map do |entry|
         next unless entry.is_a?(Hash)
 
@@ -134,6 +135,7 @@ module Vimeo
         "srcset" => srcset,
         "width" => best[:width],
         "height" => best[:height],
+        "durationSeconds" => duration_seconds,
         "sizes" => sizes,
         "fetchedAt" => Time.current.iso8601
       }
