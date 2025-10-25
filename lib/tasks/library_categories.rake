@@ -67,6 +67,7 @@ namespace :library do
       "the-basics-of-buying-and-selling-businesses" => [6],
       "understanding-linkedin" => [1, 2, 4],
       "understanding-the-x-algorithm" => [1, 2, 4],
+      "vibe-code-with-devin-cursor-codex-and-more" => [12],
       "wandering-the-pathless-path" => [10, 13],
       "what-to-expect-when-you-go-self-employed" => [6]
     }
