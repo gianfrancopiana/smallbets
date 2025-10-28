@@ -312,7 +312,7 @@ export default function LibraryIndex({
                   containerClassName="hidden sm:flex"
                 />
 
-                <div className="relative mr-13 ml-auto flex items-center sm:hidden!">
+                <div className="relative mr-13 ml-auto flex items-center sm:!hidden">
                   <Button
                     ref={mobileSearchButtonRef}
                     type="button"
@@ -334,7 +334,7 @@ export default function LibraryIndex({
                           role="dialog"
                           aria-modal="true"
                           aria-label="Search library"
-                          className="bg-background/95 fixed inset-x-0 top-0 z-[10000] flex items-center gap-3 px-2 py-2 shadow-[0_1px_0_0_var(--control-border)] backdrop-blur sm:hidden!"
+                          className="bg-background/95 fixed inset-x-0 top-0 z-[10000] flex items-center gap-3 px-2 py-2 shadow-[0_1px_0_0_var(--control-border)] backdrop-blur sm:!hidden"
                           style={{ height: navHeight ?? undefined }}
                         >
                           <button
@@ -351,6 +351,7 @@ export default function LibraryIndex({
                             onChange={setQuery}
                             containerClassName="mr-0 ml-0 max-w-none flex-1"
                             inputId="library-search-mobile"
+                            autoFocus
                             ref={mobileSearchInputRef}
                           />
                         </div>,
@@ -377,19 +378,19 @@ export default function LibraryIndex({
                 heroImagesById={featuredHeroImages}
                 className="opacity-100 transition-opacity duration-200"
               />
-              <div className="flex flex-col gap-10 transition-opacity duration-200 min-[120ch]:pl-[5vw] sm:gap-[3vw]">
+              <div className="flex flex-col gap-10 transition-opacity duration-200 [--library-left-pad:0px] sm:gap-[3vw] 2xl:pl-0 2xl:[--library-left-pad:5vw]">
                 <LibraryHero
                   continueWatching={continueWatching}
                   backIcon={assets?.backIcon}
                   thumbnails={thumbnails}
                 />
 
-                <div className="flex flex-col gap-10 pl-3 sm:gap-[3vw]">
+                <div className="flex flex-col gap-10 sm:gap-[3vw]">
                   {categoryGroups.map((group) => {
                     const headingId = `category-${group.category.slug}`
                     return (
                       <section
-                        className="flex flex-col gap-[1vw]"
+                        className="shelf-scope flex flex-col gap-[1vw]"
                         key={group.category.slug}
                         aria-labelledby={headingId}
                       >

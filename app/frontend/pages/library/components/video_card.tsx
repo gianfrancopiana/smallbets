@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { memo, useEffect, useMemo, useRef, useState } from "react"
 import { useHoverPreviewGuard } from "./hooks/use-hover-preview-guard"
 import { useIntersectionStop } from "./hooks/use-intersection-stop"
 import {
@@ -19,6 +19,8 @@ interface VideoCardProps {
   showProgress?: boolean
   backIcon?: string
   persistPreview?: boolean
+  imageLoading?: "eager" | "lazy"
+  fetchPriority?: "auto" | "high" | "low"
 }
 
 function formatTimeRemaining(
@@ -30,13 +32,18 @@ function formatTimeRemaining(
   return `${formatHoursMinutesFromSeconds(remaining)} left`
 }
 
-export default function VideoCard({
+function VideoCard({
   session,
   thumbnail,
   showProgress = false,
   backIcon,
   persistPreview = false,
+  imageLoading = "lazy",
+  fetchPriority = "auto",
 }: VideoCardProps) {
+  const [stickyThumbnail, setStickyThumbnail] = useState<
+    VimeoThumbnailPayload | undefined
+  >(thumbnail)
   const playerRef = useRef<VimeoPlayerHandle>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [shouldStartOnVisible, setShouldStartOnVisible] = useState(false)
@@ -56,6 +63,12 @@ export default function VideoCard({
   )
 
   useEffect(() => {
+    if (thumbnail) setStickyThumbnail(thumbnail)
+  }, [thumbnail])
+
+  const activeThumbnail = stickyThumbnail ?? thumbnail
+
+  useEffect(() => {
     if (!iframeVisible) return
     if (!shouldStartOnVisible) return
     playerRef.current?.startPreview()
@@ -68,6 +81,8 @@ export default function VideoCard({
       hoverMoveStartedRef.current = false
       disarm()
       playerRef.current?.stopPreview()
+      setIframeVisible(false)
+      setIframeReady(false)
     },
   })
 
@@ -135,7 +150,7 @@ export default function VideoCard({
   return (
     <article
       id={`session-${session.id}`}
-      className="relative flex w-[var(--shelf-card-w,21.5vw)] shrink-0 flex-col gap-[0.4vw] p-[4px]"
+      className="relative flex w-full shrink-0 flex-col gap-[0.4vw] p-[4px] select-none"
     >
       <div
         ref={containerRef}
@@ -143,7 +158,6 @@ export default function VideoCard({
         onPointerEnter={() => {
           if (!supportsHover()) return
           if (isDataSaverEnabled()) return
-          if (!iframeVisible) setIframeVisible(true)
           hoverMoveStartedRef.current = false
           prefetchWatchPage()
         }}
@@ -160,6 +174,7 @@ export default function VideoCard({
             return
           if (hoverMoveStartedRef.current) return
           hoverMoveStartedRef.current = true
+          if (!iframeVisible) setIframeVisible(true)
           arm()
           setShouldStartOnVisible(true)
         }}
@@ -167,28 +182,34 @@ export default function VideoCard({
           hoverMoveStartedRef.current = false
           disarm()
           playerRef.current?.stopPreview()
+          setIframeVisible(false)
+          setIframeReady(false)
         }}
         onPointerCancel={() => {
           hoverMoveStartedRef.current = false
           disarm()
           playerRef.current?.stopPreview()
+          setIframeVisible(false)
+          setIframeReady(false)
         }}
       >
-        <figure className="relative order-1 aspect-[16/9] w-full overflow-hidden rounded shadow-[0_0_0_0px_transparent] transition-shadow duration-150 group-hover:shadow-[0_0_0_1px_transparent,0_0_0_3px_#00ADEF]">
-          {thumbnail ? (
+        <figure className="relative order-1 aspect-[16/9] w-full overflow-hidden rounded shadow-[0_0_0_0px_transparent] transition-shadow duration-150 select-none group-hover:shadow-[0_0_0_1px_transparent,0_0_0_3px_#00ADEF]">
+          {activeThumbnail ? (
             <picture className="absolute inset-0 block h-full w-full">
               <source
-                srcSet={thumbnail.srcset}
+                srcSet={activeThumbnail.srcset}
                 sizes="(min-width: 768px) 33vw, 100vw"
               />
               <img
-                src={thumbnail.src}
+                src={activeThumbnail.src}
                 alt=""
                 decoding="async"
-                loading="lazy"
-                width={thumbnail.width}
-                height={thumbnail.height}
-                className={`absolute inset-0 size-full object-cover transition-opacity duration-300 ${iframeReady ? "opacity-0" : "opacity-100"}`}
+                loading={imageLoading}
+                fetchPriority={fetchPriority}
+                draggable={false}
+                width={activeThumbnail.width}
+                height={activeThumbnail.height}
+                className={`absolute inset-0 size-full object-cover transition-opacity duration-300 ${iframeVisible && iframeReady ? "opacity-0" : "opacity-100"}`}
               />
             </picture>
           ) : (
@@ -255,9 +276,28 @@ export default function VideoCard({
             e.preventDefault()
             handleTitleClick()
           }}
-          className="absolute inset-0 z-[1] cursor-pointer rounded bg-transparent focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00ADEF]"
+          className="absolute inset-0 z-[1] cursor-pointer rounded bg-transparent select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00ADEF]"
         />
       </div>
     </article>
   )
 }
+
+function arePropsEqual(prev: VideoCardProps, next: VideoCardProps): boolean {
+  if (prev.session !== next.session) return false
+  if (prev.showProgress !== next.showProgress) return false
+  if (prev.persistPreview !== next.persistPreview) return false
+  if (prev.backIcon !== next.backIcon) return false
+  const prevThumb = prev.thumbnail
+  const nextThumb = next.thumbnail
+  if (!prevThumb && !nextThumb) return true
+  if (!prevThumb || !nextThumb) return false
+  return (
+    prevThumb.src === nextThumb.src &&
+    prevThumb.width === nextThumb.width &&
+    prevThumb.height === nextThumb.height &&
+    prevThumb.srcset === nextThumb.srcset
+  )
+}
+
+export default memo(VideoCard, arePropsEqual)

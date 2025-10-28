@@ -14,7 +14,7 @@ export default function SectionHeader({
       <div>
         <h2
           id={id}
-          className="text-foreground pl-1 text-xl leading-tight font-medium tracking-wider capitalize select-none"
+          className="text-foreground !pl-[var(--shelf-side-pad)] text-xl leading-tight font-medium tracking-wider capitalize select-none"
         >
           {title}
         </h2>
