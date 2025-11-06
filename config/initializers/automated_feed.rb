@@ -16,7 +16,7 @@ module AutomatedFeed
 
     def initialize
       @lookback_hours = ENV.fetch("AUTOMATED_FEED_LOOKBACK_HOURS", "2").to_i
-      @max_conversations_per_scan = ENV.fetch("AUTOMATED_FEED_MAX_CONVERSATIONS", "999").to_i
+      @max_conversations_per_scan = ENV.fetch("AUTOMATED_FEED_MAX_CONVERSATIONS", "20").to_i
       @ai_model = ENV.fetch("AUTOMATED_FEED_AI_MODEL", "anthropic/claude-haiku-4.5")
       @enable_automated_scans = ENV.fetch("AUTOMATED_FEED_ENABLED", "true") == "true"
       @activity_message_threshold = ENV.fetch("AUTOMATED_FEED_MESSAGE_THRESHOLD", "15").to_i
