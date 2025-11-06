@@ -20,7 +20,7 @@ module AutomatedFeed
     end
 
     test "check returns skip for exact fingerprint match" do
-      existing_card = FeedCard.create!(
+      existing_card = AutomatedFeedCard.create!(
         room: @room,
         title: "Existing",
         summary: "Existing summary",
@@ -36,8 +36,8 @@ module AutomatedFeed
     end
 
     test "check returns new_topic when no matches" do
-      FeedCard.stubs(:find_by).returns(nil)
-      FeedCard.stubs(:where).returns(FeedCard.none)
+      AutomatedFeedCard.stubs(:find_by).returns(nil)
+      AutomatedFeedCard.stubs(:where).returns(AutomatedFeedCard.none)
 
       @ai_gateway.stubs(:complete).returns({
         "action" => "new_topic",
@@ -52,7 +52,7 @@ module AutomatedFeed
     end
 
     test "check returns continuation when AI detects continuation" do
-      existing_card = FeedCard.create!(
+      existing_card = AutomatedFeedCard.create!(
         room: @room,
         title: "Existing",
         summary: "Existing summary",
@@ -78,7 +78,7 @@ module AutomatedFeed
     end
 
     test "check returns skip for duplicate" do
-      existing_card = FeedCard.create!(
+      existing_card = AutomatedFeedCard.create!(
         room: @room,
         title: "Existing",
         summary: "Existing summary",
@@ -104,8 +104,8 @@ module AutomatedFeed
     end
 
     test "check handles AI errors gracefully" do
-      FeedCard.stubs(:find_by).returns(nil)
-      FeedCard.stubs(:where).returns(FeedCard.none)
+      AutomatedFeedCard.stubs(:find_by).returns(nil)
+      AutomatedFeedCard.stubs(:where).returns(AutomatedFeedCard.none)
 
       @ai_gateway.stubs(:complete).raises(@ai_gateway::Error.new("API error"))
 
@@ -132,13 +132,13 @@ module AutomatedFeed
       )
 
       # Create digest cards for each
-      card_from_room_1 = FeedCard.create!(
+      card_from_room_1 = AutomatedFeedCard.create!(
         room: conv_room_1,
         title: "Card from room 1",
         summary: "Summary 1",
         type: "automated"
       )
-      card_from_room_2 = FeedCard.create!(
+      card_from_room_2 = AutomatedFeedCard.create!(
         room: conv_room_2,
         title: "Card from room 2",
         summary: "Summary 2",
@@ -176,7 +176,7 @@ module AutomatedFeed
         creator: @user1
       )
 
-      card = FeedCard.create!(
+      card = AutomatedFeedCard.create!(
         room: conv_room,
         title: "Card",
         summary: "Summary",
