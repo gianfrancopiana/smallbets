@@ -1,6 +1,6 @@
 require "test_helper"
 
-module AutomatedDigest
+module AutomatedFeed
   class RoomUpdaterTest < ActiveSupport::TestCase
     setup do
       @user1 = users(:david)
@@ -28,11 +28,11 @@ module AutomatedDigest
         message_ids: [msg1.id, msg2.id],
         title: "Initial Conversation",
         summary: "Initial summary",
-        type: "digest",
+        type: "automated",
         promoted_by: nil
       )
 
-      digest_card = result[:digest_card]
+      feed_card = result[:feed_card]
       conversation_room = result[:room]
 
       # Create thread
@@ -64,7 +64,7 @@ module AutomatedDigest
 
       # Update continuation with only thread_msg1 and thread_msg3 (not thread_msg2)
       RoomUpdater.update_continuation(
-        digest_card: digest_card,
+        feed_card: feed_card,
         new_message_ids: [thread_msg1.id, thread_msg3.id],
         updated_summary: "Updated summary"
       )
@@ -82,8 +82,8 @@ module AutomatedDigest
       assert_not_includes original_message_ids, thread_msg2.id
 
       # Verify updated summary
-      digest_card.reload
-      assert_equal "Updated summary", digest_card.summary
+      feed_card.reload
+      assert_equal "Updated summary", feed_card.summary
     end
 
     test "update_continuation skips already copied messages" do
@@ -105,11 +105,11 @@ module AutomatedDigest
         message_ids: [msg1.id, msg2.id],
         title: "Test Conversation",
         summary: "Test summary",
-        type: "digest",
+        type: "automated",
         promoted_by: nil
       )
 
-      digest_card = result[:digest_card]
+      feed_card = result[:feed_card]
       conversation_room = result[:room]
 
       # Try to update with msg1 (already copied) and a new msg3
@@ -121,7 +121,7 @@ module AutomatedDigest
       )
 
       RoomUpdater.update_continuation(
-        digest_card: digest_card,
+        feed_card: feed_card,
         new_message_ids: [msg1.id, msg3.id],
         updated_summary: nil
       )
@@ -148,11 +148,11 @@ module AutomatedDigest
         message_ids: [top_msg1.id],
         title: "Test Conversation",
         summary: "Test summary",
-        type: "digest",
+        type: "automated",
         promoted_by: nil
       )
 
-      digest_card = result[:digest_card]
+      feed_card = result[:feed_card]
 
       # Create thread
       thread_room = Rooms::Thread.create!(
@@ -178,12 +178,12 @@ module AutomatedDigest
 
       # Update with both thread reply and new top-level message
       RoomUpdater.update_continuation(
-        digest_card: digest_card,
+        feed_card: feed_card,
         new_message_ids: [thread_msg.id, top_msg2.id]
       )
 
-      digest_card.room.reload
-      copied_messages = digest_card.room.messages.order(:created_at)
+      feed_card.room.reload
+      copied_messages = feed_card.room.messages.order(:created_at)
 
       # Should have 3 messages total
       assert_equal 3, copied_messages.count

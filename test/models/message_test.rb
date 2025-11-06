@@ -4,11 +4,11 @@ class MessageTest < ActiveSupport::TestCase
   include ActionCable::TestHelper, ActiveJob::TestHelper
 
   def setup
-    AutomatedDigest::ActivityTracker.stubs(:record).returns(default_tracker_result)
+    AutomatedFeed::ActivityTracker.stubs(:record).returns(default_tracker_result)
   end
 
   def teardown
-    AutomatedDigest::ActivityTracker.unstub(:record)
+    AutomatedFeed::ActivityTracker.unstub(:record)
   end
 
   test "creating a message enqueues to push later" do
@@ -27,8 +27,8 @@ class MessageTest < ActiveSupport::TestCase
       participant_count: 3
     }
 
-    assert_enqueued_with(job: AutomatedDigest::RoomScanJob, args: [room.id, { trigger_status: :message_threshold }]) do
-      AutomatedDigest::ActivityTracker.stubs(:record).returns(payload)
+    assert_enqueued_with(job: AutomatedFeed::RoomScanJob, args: [room.id, { trigger_status: :message_threshold }]) do
+      AutomatedFeed::ActivityTracker.stubs(:record).returns(payload)
       room.messages.create!(creator: users(:jason), body: "Digest trigger", client_message_id: SecureRandom.uuid)
     end
   end
@@ -43,8 +43,8 @@ class MessageTest < ActiveSupport::TestCase
       participant_count: 0
     }
 
-    assert_no_enqueued_jobs only: [AutomatedDigest::RoomScanJob] do
-      AutomatedDigest::ActivityTracker.stubs(:record).returns(payload)
+    assert_no_enqueued_jobs only: [AutomatedFeed::RoomScanJob] do
+      AutomatedFeed::ActivityTracker.stubs(:record).returns(payload)
       room.messages.create!(creator: users(:jason), body: "No trigger", client_message_id: SecureRandom.uuid)
     end
   end

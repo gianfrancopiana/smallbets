@@ -1,16 +1,16 @@
 require "test_helper"
 
-module AutomatedDigest
+module AutomatedFeed
   class ScanRunnerTest < ActiveSupport::TestCase
     setup do
       @user1 = users(:david)
       @user2 = users(:jason)
       @parent_room = rooms(:hq)
 
-      AutomatedDigest.config.room_scan_message_limit = 120
-      AutomatedDigest.config.room_scan_thread_limit = 40
-      AutomatedDigest.config.room_scan_context_backfill = 20
-      AutomatedDigest.config.room_scan_lookback_hours = 12
+      AutomatedFeed.config.room_scan_message_limit = 120
+      AutomatedFeed.config.room_scan_thread_limit = 40
+      AutomatedFeed.config.room_scan_context_backfill = 20
+      AutomatedFeed.config.room_scan_lookback_hours = 12
     end
 
     test "determine_source_room_id returns room id for messages in a single room" do
@@ -127,13 +127,13 @@ module AutomatedDigest
       runner.run
     end
 
-    test "create_new_digest_card filters out already-digested messages" do
+    test "create_new_feed_card filters out already-digested messages" do
       message1 = Message.create!(
         room: @parent_room,
         creator: @user1,
         body: ActionText::Content.new("Already digested"),
         created_at: 2.hours.ago,
-        digested: true
+        in_feed: true
       )
       
       message2 = Message.create!(
@@ -141,7 +141,7 @@ module AutomatedDigest
         creator: @user2,
         body: ActionText::Content.new("New message"),
         created_at: 1.hour.ago,
-        digested: false
+        in_feed: false
       )
 
       conversation = {
@@ -159,7 +159,7 @@ module AutomatedDigest
         has_entries(
           message_ids: [message2.id]  # Should only include message2, not message1
         )
-      ).returns({ room: @parent_room, digest_card: DigestCard.new })
+      ).returns({ room: @parent_room, feed_card: FeedCard.new })
 
       # Mock deduplicator to return new_topic
       Deduplicator.stubs(:check).returns({ action: :new_topic })
@@ -168,13 +168,13 @@ module AutomatedDigest
       runner.run
     end
 
-    test "create_new_digest_card skips conversation if all messages are digested" do
+    test "create_new_feed_card skips conversation if all messages are digested" do
       message1 = Message.create!(
         room: @parent_room,
         creator: @user1,
         body: ActionText::Content.new("Already digested 1"),
         created_at: 2.hours.ago,
-        digested: true
+        in_feed: true
       )
       
       message2 = Message.create!(
@@ -182,7 +182,7 @@ module AutomatedDigest
         creator: @user2,
         body: ActionText::Content.new("Already digested 2"),
         created_at: 1.hour.ago,
-        digested: true
+        in_feed: true
       )
 
       conversation = {

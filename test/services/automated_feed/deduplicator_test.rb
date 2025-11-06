@@ -1,6 +1,6 @@
 require "test_helper"
 
-module AutomatedDigest
+module AutomatedFeed
   class DeduplicatorTest < ActiveSupport::TestCase
     setup do
       @user1 = users(:david)
@@ -15,16 +15,16 @@ module AutomatedDigest
         topic_tags: ["test-tag"]
       }
 
-      AutomatedDigest::Scanner
+      AutomatedFeed::Scanner
       @ai_gateway = Object.const_get("AIGateway")
     end
 
     test "check returns skip for exact fingerprint match" do
-      existing_card = DigestCard.create!(
+      existing_card = FeedCard.create!(
         room: @room,
         title: "Existing",
         summary: "Existing summary",
-        type: "digest",
+        type: "automated",
         message_fingerprint: Digest::SHA256.hexdigest([1, 2, 3].sort.join(","))
       )
 
@@ -36,8 +36,8 @@ module AutomatedDigest
     end
 
     test "check returns new_topic when no matches" do
-      DigestCard.stubs(:find_by).returns(nil)
-      DigestCard.stubs(:where).returns(DigestCard.none)
+      FeedCard.stubs(:find_by).returns(nil)
+      FeedCard.stubs(:where).returns(FeedCard.none)
 
       @ai_gateway.stubs(:complete).returns({
         "action" => "new_topic",
@@ -52,11 +52,11 @@ module AutomatedDigest
     end
 
     test "check returns continuation when AI detects continuation" do
-      existing_card = DigestCard.create!(
+      existing_card = FeedCard.create!(
         room: @room,
         title: "Existing",
         summary: "Existing summary",
-        type: "digest",
+        type: "automated",
         created_at: 1.hour.ago
       )
 
@@ -78,11 +78,11 @@ module AutomatedDigest
     end
 
     test "check returns skip for duplicate" do
-      existing_card = DigestCard.create!(
+      existing_card = FeedCard.create!(
         room: @room,
         title: "Existing",
         summary: "Existing summary",
-        type: "digest",
+        type: "automated",
         created_at: 1.hour.ago
       )
 
@@ -104,8 +104,8 @@ module AutomatedDigest
     end
 
     test "check handles AI errors gracefully" do
-      DigestCard.stubs(:find_by).returns(nil)
-      DigestCard.stubs(:where).returns(DigestCard.none)
+      FeedCard.stubs(:find_by).returns(nil)
+      FeedCard.stubs(:where).returns(FeedCard.none)
 
       @ai_gateway.stubs(:complete).raises(@ai_gateway::Error.new("API error"))
 
@@ -132,17 +132,17 @@ module AutomatedDigest
       )
 
       # Create digest cards for each
-      card_from_room_1 = DigestCard.create!(
+      card_from_room_1 = FeedCard.create!(
         room: conv_room_1,
         title: "Card from room 1",
         summary: "Summary 1",
-        type: "digest"
+        type: "automated"
       )
-      card_from_room_2 = DigestCard.create!(
+      card_from_room_2 = FeedCard.create!(
         room: conv_room_2,
         title: "Card from room 2",
         summary: "Summary 2",
-        type: "digest"
+        type: "automated"
       )
 
       # Check deduplication for a conversation from parent_room_1
@@ -176,11 +176,11 @@ module AutomatedDigest
         creator: @user1
       )
 
-      card = DigestCard.create!(
+      card = FeedCard.create!(
         room: conv_room,
         title: "Card",
         summary: "Summary",
-        type: "digest"
+        type: "automated"
       )
 
       # Need to stub AIGateway outside the module namespace

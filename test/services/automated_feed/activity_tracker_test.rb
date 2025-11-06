@@ -1,7 +1,7 @@
 require "test_helper"
 require "set"
 
-module AutomatedDigest
+module AutomatedFeed
   class ActivityTrackerTest < ActiveSupport::TestCase
     class FakeRedis
       def initialize
@@ -100,56 +100,56 @@ module AutomatedDigest
 
     test "record triggers when message threshold reached and acquires lock" do
       fake = FakeRedis.new
-      AutomatedDigest::ActivityTracker.stubs(:redis).returns(fake)
+      AutomatedFeed::ActivityTracker.stubs(:redis).returns(fake)
 
       message = messages(:first)
 
-      first = AutomatedDigest::ActivityTracker.record(message)
+      first = AutomatedFeed::ActivityTracker.record(message)
       refute first[:trigger?]
       assert_equal :monitoring, first[:status]
 
-      second = AutomatedDigest::ActivityTracker.record(message)
+      second = AutomatedFeed::ActivityTracker.record(message)
       assert second[:trigger?]
       assert_equal :message_threshold, second[:status]
       assert_equal message.room_id, second[:room_id]
 
-      third = AutomatedDigest::ActivityTracker.record(message)
+      third = AutomatedFeed::ActivityTracker.record(message)
       refute third[:trigger?]
       assert_equal :locked, third[:status]
 
-      assert_equal [message.room_id.to_s], AutomatedDigest::ActivityTracker.active_room_ids
+      assert_equal [message.room_id.to_s], AutomatedFeed::ActivityTracker.active_room_ids
     end
 
     test "mark_scanned clears counters and enforces cooldown" do
       fake = FakeRedis.new
-      AutomatedDigest::ActivityTracker.stubs(:redis).returns(fake)
+      AutomatedFeed::ActivityTracker.stubs(:redis).returns(fake)
 
       message = messages(:first)
-      result = AutomatedDigest::ActivityTracker.record(message)
+      result = AutomatedFeed::ActivityTracker.record(message)
       refute result[:trigger?]
 
-      trigger = AutomatedDigest::ActivityTracker.record(message)
+      trigger = AutomatedFeed::ActivityTracker.record(message)
       assert trigger[:trigger?]
 
-      AutomatedDigest::ActivityTracker.mark_scanned(trigger[:room_id])
+      AutomatedFeed::ActivityTracker.mark_scanned(trigger[:room_id])
 
-      cooldown = AutomatedDigest::ActivityTracker.should_scan?(trigger[:room_id])
+      cooldown = AutomatedFeed::ActivityTracker.should_scan?(trigger[:room_id])
       refute cooldown[:trigger?]
       assert_equal :cooldown, cooldown[:status]
 
-      stats_after_reset = AutomatedDigest::ActivityTracker.record(message)
+      stats_after_reset = AutomatedFeed::ActivityTracker.record(message)
       refute stats_after_reset[:trigger?]
     end
 
     test "record ignores conversation rooms" do
       fake = FakeRedis.new
-      AutomatedDigest::ActivityTracker.stubs(:redis).returns(fake)
+      AutomatedFeed::ActivityTracker.stubs(:redis).returns(fake)
 
       message = messages(:first)
       room = message.room
       room.stubs(:conversation_room?).returns(true)
 
-      ignored = AutomatedDigest::ActivityTracker.record(message)
+      ignored = AutomatedFeed::ActivityTracker.record(message)
       refute ignored[:trigger?]
       assert_equal :ignored, ignored[:status]
       assert_nil ignored[:room_id]
@@ -160,9 +160,9 @@ module AutomatedDigest
     private
 
     def configure_thresholds(messages:, quality_messages:, quality_participants:)
-      AutomatedDigest.config.activity_message_threshold = messages
-      AutomatedDigest.config.activity_quality_message_threshold = quality_messages
-      AutomatedDigest.config.activity_quality_participant_threshold = quality_participants
+      AutomatedFeed.config.activity_message_threshold = messages
+      AutomatedFeed.config.activity_quality_message_threshold = quality_messages
+      AutomatedFeed.config.activity_quality_participant_threshold = quality_participants
     end
   end
 end

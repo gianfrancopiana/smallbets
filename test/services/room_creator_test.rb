@@ -48,7 +48,7 @@ class RoomCreatorTest < ActiveSupport::TestCase
       message_ids: [thread_msg1.id, thread_msg3.id],
       title: "Test Conversation",
       summary: "Test summary",
-      type: "digest",
+      type: "automated",
       promoted_by: nil
     )
 
@@ -103,7 +103,7 @@ class RoomCreatorTest < ActiveSupport::TestCase
       message_ids: [top_msg1.id, top_msg2.id, thread_msg.id],
       title: "Mixed Conversation",
       summary: "Mixed summary",
-      type: "digest",
+      type: "automated",
       promoted_by: nil
     )
 
@@ -141,33 +141,33 @@ class RoomCreatorTest < ActiveSupport::TestCase
       message_ids: [msg1.id, msg2.id],
       title: "First Conversation",
       summary: "First summary",
-      type: "digest",
+      type: "automated",
       promoted_by: nil
     )
 
-    digest_card1 = result1[:digest_card]
+    feed_card1 = result1[:feed_card]
     expected_fingerprint1 = Digest::SHA256.hexdigest([msg1.id, msg2.id].sort.join(","))
-    assert_equal expected_fingerprint1, digest_card1.message_fingerprint
+    assert_equal expected_fingerprint1, feed_card1.message_fingerprint
 
     # Try to create second conversation room with same messages - should find existing
     result2 = RoomCreator.create_conversation_room(
       message_ids: [msg1.id, msg2.id],
       title: "Duplicate Conversation",
       summary: "Duplicate summary",
-      type: "digest",
+      type: "automated",
       promoted_by: nil
     )
 
     # Should return the same room
     assert_equal result1[:room].id, result2[:room].id
-    assert_equal digest_card1.id, result2[:digest_card].id
+    assert_equal feed_card1.id, result2[:feed_card].id
 
     # Create third conversation room with msg1, msg2, and msg3 - should be new
     result3 = RoomCreator.create_conversation_room(
       message_ids: [msg1.id, msg2.id, msg3.id],
       title: "Extended Conversation",
       summary: "Extended summary",
-      type: "digest",
+      type: "automated",
       promoted_by: nil
     )
 
@@ -201,7 +201,7 @@ class RoomCreatorTest < ActiveSupport::TestCase
         message_ids: [msg_a.id, msg_b.id],
         title: "Cross-room conversation",
         summary: "Should fail",
-        type: "digest",
+        type: "automated",
         promoted_by: nil
       )
     end
@@ -262,7 +262,7 @@ class RoomCreatorTest < ActiveSupport::TestCase
         message_ids: [thread_msg_a.id, thread_msg_b.id],
         title: "Cross-thread conversation",
         summary: "Should fail",
-        type: "digest",
+        type: "automated",
         promoted_by: nil
       )
     end
@@ -310,7 +310,7 @@ class RoomCreatorTest < ActiveSupport::TestCase
         message_ids: [thread_msg_a.id, msg_b.id],
         title: "Mixed room conversation",
         summary: "Should fail",
-        type: "digest",
+        type: "automated",
         promoted_by: nil
       )
     end

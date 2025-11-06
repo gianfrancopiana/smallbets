@@ -3,17 +3,17 @@ require "test_helper"
 module HomeFeed
   class RankerTest < ActiveSupport::TestCase
     setup do
-      @user1 = users(:one)
-      @user2 = users(:two)
-      @source_room = rooms(:one)
+      @user1 = users(:david)
+      @user2 = users(:jason)
+      @source_room = rooms(:pets)
       
       @room1 = Rooms::Open.create!(name: "Room 1", source_room: @source_room, creator: @user1)
       @room2 = Rooms::Open.create!(name: "Room 2", source_room: @source_room, creator: @user1)
       @room3 = Rooms::Open.create!(name: "Room 3", source_room: @source_room, creator: @user1)
       
-      @card1 = DigestCard.create!(room: @room1, title: "Card 1", summary: "Summary 1", type: "digest")
-      @card2 = DigestCard.create!(room: @room2, title: "Card 2", summary: "Summary 2", type: "digest")
-      @card3 = DigestCard.create!(room: @room3, title: "Card 3", summary: "Summary 3", type: "digest")
+      @card1 = FeedCard.create!(room: @room1, title: "Card 1", summary: "Summary 1", type: "automated")
+      @card2 = FeedCard.create!(room: @room2, title: "Card 2", summary: "Summary 2", type: "automated")
+      @card3 = FeedCard.create!(room: @room3, title: "Card 3", summary: "Summary 3", type: "automated")
       
       @msg1_1 = Message.create!(room: @room1, creator: @user1, body: ActionText::Content.new("Message 1"), created_at: 1.hour.ago)
       @msg1_2 = Message.create!(room: @room1, creator: @user2, body: ActionText::Content.new("Message 2"), created_at: 1.hour.ago)
@@ -38,7 +38,7 @@ module HomeFeed
     test "top prioritizes activity over recency" do
       # Create room with high activity but older
       room4 = Rooms::Open.create!(name: "Room 4", source_room: @source_room, creator: @user1)
-      card4 = DigestCard.create!(room: room4, title: "Card 4", summary: "Summary 4", type: "digest")
+      card4 = FeedCard.create!(room: room4, title: "Card 4", summary: "Summary 4", type: "automated")
       
       5.times do |i|
         msg = Message.create!(room: room4, creator: @user1, body: ActionText::Content.new("Message #{i}"), created_at: 3.days.ago)
@@ -62,7 +62,7 @@ module HomeFeed
     
     test "new excludes cards without messages" do
       room4 = Rooms::Open.create!(name: "Room 4", source_room: @source_room, creator: @user1)
-      card4 = DigestCard.create!(room: room4, title: "Card 4", summary: "Summary 4", type: "digest")
+      card4 = FeedCard.create!(room: room4, title: "Card 4", summary: "Summary 4", type: "automated")
       
       result = Ranker.new(limit: 10)
       
@@ -70,7 +70,7 @@ module HomeFeed
     end
     
     test "top handles empty results" do
-      DigestCard.destroy_all
+      FeedCard.destroy_all
       
       result = Ranker.top(limit: 10)
       
@@ -78,7 +78,7 @@ module HomeFeed
     end
     
     test "new handles empty results" do
-      DigestCard.destroy_all
+      FeedCard.destroy_all
       
       result = Ranker.new(limit: 10)
       

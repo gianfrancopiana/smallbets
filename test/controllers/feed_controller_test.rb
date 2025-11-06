@@ -7,7 +7,7 @@ class FeedControllerTest < ActionDispatch::IntegrationTest
     @source_room = rooms(:pets)
     
     @room1 = Rooms::Open.create!(name: "Room 1", source_room: @source_room, creator: @user1)
-    @card1 = DigestCard.create!(room: @room1, title: "Card 1", summary: "Summary 1", type: "digest")
+    @card1 = FeedCard.create!(room: @room1, title: "Card 1", summary: "Summary 1", type: "automated")
     Message.create!(room: @room1, creator: @user1, body: ActionText::Content.new("Message"))
 
     FeedController.any_instance.stubs(:set_sidebar_memberships)
@@ -45,7 +45,7 @@ class FeedControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
 
     payload = response.parsed_body
-    assert_kind_of Array, payload["digestCards"]
+    assert_kind_of Array, payload["feedCards"]
   end
 
   test "non-admin html requests are redirected to talk" do

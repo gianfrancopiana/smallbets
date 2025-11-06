@@ -1,20 +1,20 @@
 require "test_helper"
 
-module AutomatedDigest
+module AutomatedFeed
   class ScannerTest < ActiveSupport::TestCase
     setup do
       @user1 = users(:david)
       @user2 = users(:jason)
       @room = rooms(:hq)
       
-      AutomatedDigest.config.enable_automated_scans = true
-      AutomatedDigest.config.room_scan_message_limit = 25
-      AutomatedDigest.config.room_scan_thread_limit = 10
-      AutomatedDigest.config.room_scan_context_backfill = 5
-      AutomatedDigest.config.room_scan_lookback_hours = 24
-      AutomatedDigest.config.max_conversations_per_scan = 999
+      AutomatedFeed.config.enable_automated_scans = true
+      AutomatedFeed.config.room_scan_message_limit = 25
+      AutomatedFeed.config.room_scan_thread_limit = 10
+      AutomatedFeed.config.room_scan_context_backfill = 5
+      AutomatedFeed.config.room_scan_lookback_hours = 24
+      AutomatedFeed.config.max_conversations_per_scan = 999
       
-      AutomatedDigest::Scanner # ensure autoload (and loads AIGateway via require_relative)
+      AutomatedFeed::Scanner # ensure autoload (and loads AIGateway via require_relative)
       @ai_gateway = Object.const_get("AIGateway")
 
       @ai_gateway.stubs(:complete).returns({
@@ -31,16 +31,16 @@ module AutomatedDigest
     end
 
     teardown do
-      AutomatedDigest.config.enable_automated_scans = true
-      AutomatedDigest.config.room_scan_message_limit = 120
-      AutomatedDigest.config.room_scan_thread_limit = 40
-      AutomatedDigest.config.room_scan_context_backfill = 20
-      AutomatedDigest.config.room_scan_lookback_hours = 12
-      AutomatedDigest.config.max_conversations_per_scan = 999
+      AutomatedFeed.config.enable_automated_scans = true
+      AutomatedFeed.config.room_scan_message_limit = 120
+      AutomatedFeed.config.room_scan_thread_limit = 40
+      AutomatedFeed.config.room_scan_context_backfill = 20
+      AutomatedFeed.config.room_scan_lookback_hours = 12
+      AutomatedFeed.config.max_conversations_per_scan = 999
     end
 
     test "scan returns empty array when disabled" do
-      AutomatedDigest.config.enable_automated_scans = false
+      AutomatedFeed.config.enable_automated_scans = false
       
       result = Scanner.scan
       
@@ -101,7 +101,7 @@ module AutomatedDigest
         creator: @user1,
         body: ActionText::Content.new("Old context message"),
         created_at: 3.hours.ago,
-        digested: true
+        in_feed: true
       )
 
       new_message = Message.create!(
@@ -109,7 +109,7 @@ module AutomatedDigest
         creator: @user2,
         body: ActionText::Content.new("Fresh message"),
         created_at: 5.minutes.ago,
-        digested: false
+        in_feed: false
       )
 
       @ai_gateway.expects(:complete).with(
@@ -163,7 +163,7 @@ module AutomatedDigest
         creator: @user1,
         body: ActionText::Content.new("Test"),
         created_at: 1.hour.ago,
-        digested: true
+        in_feed: true
       )
 
       result = Scanner.scan
@@ -172,7 +172,7 @@ module AutomatedDigest
     end
 
     test "scan respects max conversations per scan" do
-      AutomatedDigest.config.max_conversations_per_scan = 1
+      AutomatedFeed.config.max_conversations_per_scan = 1
 
       message1 = Message.create!(
         room: @room,
