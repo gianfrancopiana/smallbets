@@ -127,7 +127,7 @@ module AutomatedFeed
 
     def log_scan(messages)
       if room.present?
-        digested_count = messages.count(&:in_feed?)
+        in_feed_count = messages.count(&:in_feed?)
         recent_count = messages.count { |m| m.created_at >= room_scan_lookback_start }
         old_count = messages.size - recent_count
         
@@ -137,7 +137,7 @@ module AutomatedFeed
         Rails.logger.info "[AutomatedFeed::Scanner] Scanning #{messages.size} messages from room ##{room.id} (#{room.name})"
         Rails.logger.info "[AutomatedFeed::Scanner]   - Recent (last 12h): #{recent_count} messages"
         Rails.logger.info "[AutomatedFeed::Scanner]   - Backlog/context: #{old_count} messages"
-        Rails.logger.info "[AutomatedFeed::Scanner]   - Already in feed: #{digested_count} messages"
+        Rails.logger.info "[AutomatedFeed::Scanner]   - Already in feed: #{in_feed_count} messages"
         Rails.logger.info "[AutomatedFeed::Scanner]   - Time range: #{oldest_msg&.created_at&.strftime('%Y-%m-%d %H:%M')} to #{newest_msg&.created_at&.strftime('%Y-%m-%d %H:%M')}" if oldest_msg && newest_msg
       else
         Rails.logger.info "[AutomatedFeed::Scanner] Scanning #{messages.size} non-feed messages from last #{@config.lookback_hours} hours"

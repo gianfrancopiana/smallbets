@@ -1,5 +1,4 @@
 require_relative "ai_gateway"
-require_relative "digest_prompts"
 require_relative "feed_prompts"
 
 class ConversationDetector
@@ -148,7 +147,7 @@ class ConversationDetector
       - "thread-reply-to-X" = reply in thread under message X
 
       TASK:
-      #{DigestPrompts.conversation_completeness_instructions}
+      #{FeedPrompts.conversation_completeness_instructions}
       
       OUTPUT FORMAT (JSON):
       {
@@ -277,13 +276,13 @@ class ConversationDetector
 
       REQUIREMENTS:
 
-      #{DigestPrompts.title_guidelines}
+      #{FeedPrompts.title_guidelines}
 
-      #{DigestPrompts.summary_guidelines}
+      #{FeedPrompts.summary_guidelines}
 
-      #{DigestPrompts.key_insight_guidelines}
+      #{FeedPrompts.key_insight_guidelines}
 
-      #{DigestPrompts.preview_message_guidelines}
+      #{FeedPrompts.preview_message_guidelines}
 
       TONE GUIDE:
       - Write like a human, not a corporate blog

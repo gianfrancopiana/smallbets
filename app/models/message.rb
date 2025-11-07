@@ -184,8 +184,6 @@ class Message < ApplicationRecord
   end
 
   def deactivate_copied_messages_on_deactivation
-    # When an original message is deactivated/reactivated, sync the state to all copied messages
-    # This ensures digest/conversation rooms reflect the current state of messages in the source room
     if saved_change_to_attribute?(:active) && copied_messages.any?
       copied_messages.update_all(active: active)
     end
