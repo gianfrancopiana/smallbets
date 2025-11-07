@@ -131,7 +131,7 @@ module AutomatedFeed
         creator: @user1
       )
 
-      # Create digest cards for each
+      # Create feed cards for each
       card_from_room_1 = AutomatedFeedCard.create!(
         room: conv_room_1,
         title: "Card from room 1",
