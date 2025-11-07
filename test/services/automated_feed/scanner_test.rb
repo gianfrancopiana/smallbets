@@ -14,8 +14,8 @@ module AutomatedFeed
       AutomatedFeed.config.room_scan_lookback_hours = 24
       AutomatedFeed.config.max_conversations_per_scan = 999
       
-      AutomatedFeed::Scanner # ensure autoload (and loads AIGateway via require_relative)
-      @ai_gateway = Object.const_get("AIGateway")
+      AutomatedFeed::Scanner # ensure autoload (and loads AiGateway via require_relative)
+      @ai_gateway = Object.const_get("AiGateway")
 
       @ai_gateway.stubs(:complete).returns({
         "conversations" => [

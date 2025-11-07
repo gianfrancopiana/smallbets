@@ -1,5 +1,6 @@
 require_relative "ai_gateway"
 require_relative "digest_prompts"
+require_relative "feed_prompts"
 
 class ConversationDetector
   class Error < StandardError; end
@@ -222,7 +223,7 @@ class ConversationDetector
       }
     }
 
-    response = AIGateway.complete(
+    response = AiGateway.complete(
       prompt: @formatted_prompt,
       response_format: response_format
     )
@@ -295,7 +296,7 @@ class ConversationDetector
       OUTPUT FORMAT (JSON):
       {
         "title": "string (8-12 words, sentence case only)",
-        "summary": "string (STRICT: 160 characters max, must not exceed this limit, conversational tone)",
+        "summary": "string (STRICT: 140 characters max, must not exceed this limit, complete thoughts only, conversational tone)",
         "key_insight": "Ultra-short phrase (2-4 words, 20 characters max)",
         "preview_message_id": number | null
       }
@@ -314,8 +315,8 @@ class ConversationDetector
             },
             summary: {
               type: "string",
-              description: "Summary in 160 characters max, one sentence",
-              maxLength: 160
+              description: "Summary in 140 characters max, one sentence, complete thought",
+              maxLength: 140
             },
             key_insight: {
               type: "string",
@@ -331,14 +332,14 @@ class ConversationDetector
       }
     }
 
-    response = AIGateway.complete(
+    response = AiGateway.complete(
       prompt: title_summary_prompt,
       response_format: response_format
     )
 
     parsed = JSON.parse(response)
     @title = parsed["title"]
-    @summary = parsed["summary"]&.slice(0, 160) || ""
+    @summary = FeedPrompts.truncate_summary(parsed["summary"], 140)
     @key_insight = parsed["key_insight"]
     @preview_message_id = parsed["preview_message_id"]
   end

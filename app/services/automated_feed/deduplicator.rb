@@ -77,7 +77,7 @@ module AutomatedFeed
         }
       }
 
-      response = AIGateway.complete(
+      response = AiGateway.complete(
         prompt: prompt,
         model: @config.ai_model,
         response_format: response_format
@@ -125,7 +125,7 @@ module AutomatedFeed
         Rails.logger.warn "[AutomatedFeed::Deduplicator] Unknown action '#{action}', treating as new topic"
         { action: :new_topic, reasoning: "Unknown action" }
       end
-    rescue AIGateway::Error => e
+    rescue AiGateway::Error => e
       Rails.logger.error "[AutomatedFeed::Deduplicator] AI error: #{e.class} - #{e.message}"
       { action: :new_topic, reasoning: "AI error: #{e.message}" }
     rescue JSON::ParserError => e
