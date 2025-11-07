@@ -213,7 +213,7 @@ module AutomatedFeed
                     },
                     summary: {
                       type: "string",
-                      description: "Proposed summary (160 characters max, one sentence)"
+                      description: "Proposed summary (140 characters max, one or two sentences, complete thought)"
                     },
                     participants: {
                       type: "array",
@@ -289,7 +289,7 @@ module AutomatedFeed
         detected << {
           message_ids: valid_message_ids,
           title: conv["title"],
-          summary: conv["summary"]&.slice(0, 160) || "",
+          summary: FeedPrompts.truncate_summary(conv["summary"], 140),
           key_insight: conv["key_insight"],
           participants: Array(conv["participants"]),
           topic_tags: Array(conv["topic_tags"]),

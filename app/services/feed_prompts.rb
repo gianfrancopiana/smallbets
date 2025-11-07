@@ -1,6 +1,12 @@
 module FeedPrompts
   module_function
 
+  # Return summary as-is, trusting the AI to respect the maxLength constraint
+  # The JSON schema enforces the character limit, so no manual truncation needed
+  def truncate_summary(text, _max_length = 140)
+    text.to_s.strip
+  end
+
   def title_guidelines
     <<~TEXT
       TITLE GUIDELINES (8-12 words):
@@ -21,16 +27,17 @@ module FeedPrompts
 
   def summary_guidelines
     <<~TEXT
-      SUMMARY GUIDELINES (STRICT: 160 characters max, one sentence):
-      - CRITICAL: Must be exactly 160 characters or less. Count characters carefully.
+      SUMMARY GUIDELINES (STRICT: 140 characters max, one or two sentences):
+      - CRITICAL: Must be 140 characters or less AND end with a complete thought. Count characters carefully.
+      - Do not cut off mid-sentence or mid-word - complete the thought within the limit
       - Casual and conversational, like explaining it to a friend
       - What actually happened, skip the corporate speak
       - Third person is fine, but keep it natural
       - Specific details over generic descriptions
-      - If you exceed 160 characters, trim it down - be concise!
+      - If you're approaching the limit, wrap up the sentence naturally
       - Examples (good):
-        ✓ "Made $200 clearing an apartment complex driveway in 4 hours. Calls kept coming but had to turn down bigger jobs."
-        ✓ "Building a product is easy. Getting anyone to actually care about it feels like hitting a wall over and over."
+        ✓ "Made $200 clearing an apartment complex driveway in 4 hours. Calls kept coming but had to turn down bigger jobs." (120 chars)
+        ✓ "Building a product is easy. Getting anyone to actually care about it feels like hitting a wall over and over." (114 chars)
       - Examples (bad):
         ✗ "Community member shares strategic insights regarding customer acquisition optimization." (too formal/corporate)
         ✗ "An interesting discussion ensued." (vague, boring)
