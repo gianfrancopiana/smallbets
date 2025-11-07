@@ -1,4 +1,4 @@
-class AIGateway
+class AiGateway
   class Error < StandardError; end
   class APIError < Error; end
   class TimeoutError < Error; end
@@ -72,7 +72,7 @@ class AIGateway
       request_params[:response_format] = response_format
     end
 
-    Rails.logger.info "[AIGateway] Calling model=#{model} with prompt_length=#{prompt.length}"
+    Rails.logger.info "[AiGateway] Calling model=#{model} with prompt_length=#{prompt.length}"
 
     retries = 0
     max_retries = 1
@@ -86,15 +86,15 @@ class AIGateway
     rescue Faraday::TimeoutError, Faraday::ConnectionFailed => e
       retries += 1
       if retries <= max_retries
-        Rails.logger.warn "[AIGateway] Retry #{retries}/#{max_retries} after timeout"
+        Rails.logger.warn "[AiGateway] Retry #{retries}/#{max_retries} after timeout"
         sleep(1)
         retry
       else
-        Rails.logger.error "[AIGateway] Timeout after #{max_retries} retries: #{e.message}"
+        Rails.logger.error "[AiGateway] Timeout after #{max_retries} retries: #{e.message}"
         raise TimeoutError, "AI Gateway timeout: #{e.message}"
       end
     rescue StandardError => e
-      Rails.logger.error "[AIGateway] API error: #{e.class} - #{e.message}"
+      Rails.logger.error "[AiGateway] API error: #{e.class} - #{e.message}"
       raise APIError, "AI Gateway error: #{e.message}"
     end
   end
@@ -106,17 +106,17 @@ class AIGateway
   def handle_response(response)
     if response["error"]
       error_message = response["error"]["message"] || "Unknown error"
-      Rails.logger.error "[AIGateway] API returned error: #{error_message}"
+      Rails.logger.error "[AiGateway] API returned error: #{error_message}"
       raise APIError, error_message
     end
 
     content = response.dig("choices", 0, "message", "content")
     if content.nil?
-      Rails.logger.error "[AIGateway] No content in response: #{response.inspect}"
+      Rails.logger.error "[AiGateway] No content in response: #{response.inspect}"
       raise APIError, "No content in AI response"
     end
 
-    Rails.logger.info "[AIGateway] Successfully received response (length=#{content.length})"
+    Rails.logger.info "[AiGateway] Successfully received response (length=#{content.length})"
     content
   end
 end

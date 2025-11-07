@@ -28,7 +28,7 @@ class PromotionsController < AuthenticatedController
   rescue ConversationDetector::NotFoundError => e
     Rails.logger.error "[PromotionsController] Message not found: #{e.message}"
     redirect_back(fallback_location: root_path, alert: "Message not found")
-  rescue ConversationDetector::Error, AIGateway::Error => e
+  rescue ConversationDetector::Error, AiGateway::Error => e
     Rails.logger.error "[PromotionsController] AI error: #{e.class} - #{e.message}"
     redirect_back(fallback_location: root_path, alert: "AI processing failed. Please try again or use manual promotion.")
   rescue RoomCreator::Error => e

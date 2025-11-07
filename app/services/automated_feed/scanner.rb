@@ -243,7 +243,7 @@ module AutomatedFeed
         }
       }
 
-      response = AIGateway.complete(
+      response = AiGateway.complete(
         prompt: prompt,
         model: @config.ai_model,
         response_format: response_format,
@@ -296,7 +296,7 @@ module AutomatedFeed
           preview_message_id: conv["preview_message_id"]
         }
       end
-    rescue AIGateway::Error => e
+    rescue AiGateway::Error => e
       Rails.logger.error "[AutomatedFeed::Scanner] AI error: #{e.class} - #{e.message}"
       []
     rescue JSON::ParserError => e

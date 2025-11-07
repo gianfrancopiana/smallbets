@@ -223,7 +223,7 @@ class ConversationDetector
       }
     }
 
-    response = AIGateway.complete(
+    response = AiGateway.complete(
       prompt: @formatted_prompt,
       response_format: response_format
     )
@@ -332,7 +332,7 @@ class ConversationDetector
       }
     }
 
-    response = AIGateway.complete(
+    response = AiGateway.complete(
       prompt: title_summary_prompt,
       response_format: response_format
     )

@@ -16,7 +16,7 @@ module AutomatedFeed
       }
 
       AutomatedFeed::Scanner
-      @ai_gateway = Object.const_get("AIGateway")
+      @ai_gateway = Object.const_get("AiGateway")
     end
 
     test "check returns skip for exact fingerprint match" do
@@ -148,8 +148,8 @@ module AutomatedFeed
       # Check deduplication for a conversation from parent_room_1
       # It should only see card_from_room_1, not card_from_room_2
       
-      # Need to stub AIGateway outside the module namespace
-      ai_gateway_class = Object.const_get("AIGateway")
+      # Need to stub AiGateway outside the module namespace
+      ai_gateway_class = Object.const_get("AiGateway")
       ai_gateway_class.stubs(:complete).returns({
         "action" => "new_topic",
         "related_card_id" => nil,
@@ -183,8 +183,8 @@ module AutomatedFeed
         type: "automated"
       )
 
-      # Need to stub AIGateway outside the module namespace
-      ai_gateway_class = Object.const_get("AIGateway")
+      # Need to stub AiGateway outside the module namespace
+      ai_gateway_class = Object.const_get("AiGateway")
       ai_gateway_class.stubs(:complete).returns({
         "action" => "new_topic",
         "related_card_id" => nil,
