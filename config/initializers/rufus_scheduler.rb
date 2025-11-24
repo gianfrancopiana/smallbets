@@ -9,7 +9,7 @@ Rails.application.config.after_initialize do
       UnreadMentionsNotifierJob.new.perform
     end
 
-    fallback_cron = ENV.fetch("AUTOMATED_FEED_FALLBACK_CRON", "0 */2 * * *")
+    fallback_cron = ENV.fetch("AUTOMATED_FEED_FALLBACK_CRON", "0 */1 * * *")
     Rails.logger.info "Scheduling AutomatedFeed fallback scans with cron: #{fallback_cron}"
 
     $rufus_scheduler.cron fallback_cron do
