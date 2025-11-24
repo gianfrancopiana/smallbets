@@ -184,6 +184,66 @@ header {
   box-shadow: 0 0 0 3px rgba(231, 65, 80, 0.2);
 }
 
+/* Promo banner (mirrors live event urgent styling) */
+#marketing-event-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #fff;
+  background-color: rgb(79 70 229);
+  border-top: 1px solid rgb(79 70 229);
+  border-bottom: 1px solid rgb(79 70 229);
+  padding: 0.75rem 1.25rem;
+  width: 100%;
+  box-sizing: border-box;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  transition: filter 0.15s ease;
+  font-size: 1.05rem;
+}
+
+#marketing-event-banner:hover {
+  text-decoration: none;
+  color: #fff;
+  background-color: rgb(79 70 229);
+  filter: brightness(1.05);
+}
+
+#marketing-event-banner .marketing-event-banner__label {
+  font-size: 1rem;
+  color: inherit;
+  font-weight: 700;
+}
+
+#marketing-event-banner .marketing-event-banner__divider {
+  opacity: 0.75;
+  color: inherit;
+  font-weight: 400;
+  font-size: 1.1em;
+}
+
+#marketing-event-banner .marketing-event-banner__message {
+  color: inherit;
+  font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+  #marketing-event-banner {
+    font-size: 1.15rem;
+  }
+
+  #marketing-event-banner .marketing-event-banner__label {
+    font-size: 1.1rem;
+  }
+
+  #marketing-event-banner .marketing-event-banner__message {
+    font-size: 1.05rem;
+  }
+}
+
 .btn-outline {
   background-color: transparent;
   color: black;
