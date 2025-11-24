@@ -81,6 +81,7 @@ jobs:
           GUMROAD_PRODUCT_IDS=${{ secrets.GUMROAD_PRODUCT_IDS }}
           WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}
           COOKIE_DOMAIN=${{ secrets.COOKIE_DOMAIN }}
+          AI_GATEWAY_API_KEY=${{ secrets.AI_GATEWAY_API_KEY }}
           EOF
 
       - name: Run Kamal setup (if requested)
