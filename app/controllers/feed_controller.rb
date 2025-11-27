@@ -323,6 +323,7 @@ class FeedController < AuthenticatedController
     reactions_by_room = Hash.new { |h, k| h[k] = [] }
 
     raw_data.each do |room_id, content, count, max_time|
+      max_time = Time.zone.parse(max_time) if max_time.is_a?(String)
       current_max = last_reaction_times[room_id]
       last_reaction_times[room_id] = max_time if current_max.nil? || max_time > current_max
       reactions_by_room[room_id] << [content, count] if content.to_s.all_emoji?
