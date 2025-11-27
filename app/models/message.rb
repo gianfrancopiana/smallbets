@@ -13,6 +13,11 @@ class Message < ApplicationRecord
 
   has_rich_text :body
 
+  alias_method :local_body_record, :body
+  alias_method :local_rich_text_body_record, :rich_text_body
+  alias_method :local_attachment_record, :attachment
+  alias_method :local_attachment?, :attachment?
+
   before_create -> { self.client_message_id ||= Random.uuid } # Bots don't care
   before_create :touch_room_activity
   after_create_commit -> { room.receive(self) }
@@ -42,6 +47,20 @@ class Message < ApplicationRecord
   scope :with_creator, -> { includes(:creator).merge(User.with_attached_avatar) }
   scope :with_threads, -> { includes(threads: { visible_memberships: :user }) }
   scope :with_original_message, -> { includes(original_message: :room) }
+  scope :with_canonical_includes, lambda {
+    includes(
+      :rich_text_body,
+      { attachment_attachment: :blob },
+      { boosts: :booster },
+      original_message: [
+        :room,
+        :creator,
+        :rich_text_body,
+        { attachment_attachment: :blob },
+        { boosts: :booster }
+      ]
+    )
+  }
   scope :created_by, ->(user) { where(creator_id: user.id) }
   scope :without_created_by, ->(user) { where.not(creator_id: user.id) }
   scope :between, ->(from, to) { where(created_at: from..to) }
@@ -62,7 +81,7 @@ class Message < ApplicationRecord
   end
 
   def plain_text_body
-    body.to_plain_text.presence || attachment&.filename&.to_s || ""
+    display_body&.to_plain_text.presence || display_attachment_filename || ""
   end
 
   def to_key
@@ -71,9 +90,12 @@ class Message < ApplicationRecord
 
   def content_type
     case
-    when attachment?    then "attachment"
-    when sound.present? then "sound"
-    else                     "text"
+    when display_attachment&.attached?
+      "attachment"
+    when sound.present?
+      "sound"
+    else
+      "text"
     end.inquiry
   end
 
@@ -81,6 +103,61 @@ class Message < ApplicationRecord
     plain_text_body.match(/\A\/play (?<name>\w+)\z/) do |match|
       Sound.find_by_name match[:name]
     end
+  end
+
+  def copy?
+    original_message_id.present?
+  end
+
+  def canonical_message
+    original_message || self
+  end
+
+  def display_body
+    canonical_message.body
+  end
+
+  def display_attachment
+    canonical_message.attachment
+  end
+
+  def display_boosts
+    canonical_message.boosts
+  end
+
+  def body
+    return local_body_record unless copy? && original_message
+
+    original_message.body
+  end
+
+  def rich_text_body
+    return local_rich_text_body_record unless copy? && original_message
+
+    original_message.rich_text_body
+  end
+
+  def attachment
+    return local_attachment_record unless copy? && original_message
+
+    original_message.attachment
+  end
+
+  def attachment?
+    return local_attachment? unless copy? && original_message
+
+    original_message.attachment?
+  end
+
+  def canonical_room
+    canonical_message.room
+  end
+
+  def display_attachment_filename
+    attachment_record = display_attachment
+    return unless attachment_record&.attached?
+
+    attachment_record.filename.to_s
   end
 
   private

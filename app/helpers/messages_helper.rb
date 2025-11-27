@@ -71,7 +71,7 @@ module MessagesHelper
     when "sound"
       message_sound_presentation(message)
     else
-      auto_link h(ContentFilters::TextMessagePresentationFilters.apply(message.body.body)), html: { target: "_blank" }
+      auto_link h(ContentFilters::TextMessagePresentationFilters.apply(message.display_body.body)), html: { target: "_blank" }
     end
   rescue Exception => e
     Sentry.capture_exception(e, extra: { message: message })
@@ -90,6 +90,7 @@ module MessagesHelper
       is_parent,
       show_room_name,
       message.original_message&.room,
+      message.canonical_message.updated_at,
       Current.user&.administrator?
     ]
   end

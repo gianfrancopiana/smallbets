@@ -12,6 +12,13 @@ class Boost < ApplicationRecord
     end
   end
 
+  def broadcast_rooms
+    canonical = message.canonical_message
+    rooms = [ canonical.room ]
+    rooms += canonical.copied_messages.includes(:room).map(&:room)
+    rooms.compact.uniq
+  end
+
   private
     def broadcast_reactivation
       previous_boost = message.boosts.where("created_at < ?", created_at).last

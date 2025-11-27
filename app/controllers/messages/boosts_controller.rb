@@ -11,7 +11,7 @@ class Messages::BoostsController < ApplicationController
 
   def create
     @source_boost = Boost.active.find_by(id: params[:source_boost_id])
-    @boost = @message.boosts.create!(boost_params)
+    @boost = @message.canonical_message.boosts.create!(boost_params)
 
     broadcast_create
     deliver_webhooks_to_bots(@boost, :created)
@@ -35,17 +35,22 @@ class Messages::BoostsController < ApplicationController
     end
 
     def broadcast_create
-      boost_html = render_to_string(partial: "messages/boosts/boost", locals: { boost: @boost })
+      boost_html = render_to_string(partial: "messages/boosts/boost", locals: { boost: @boost }, formats: :html)
 
-      @boost.broadcast_append_to @boost.message.room, :messages,
-        target: "boosts_message_#{@boost.message.client_message_id}", html: boost_html
+      @boost.broadcast_rooms.each do |room|
+        @boost.broadcast_append_to room, :messages,
+          target: "boosts_message_#{@boost.message.client_message_id}", html: boost_html
+      end
 
-      @boost.broadcast_append_to :inbox, target: "boosts_message_#{@boost.message.client_message_id}",
+      @boost.broadcast_append_to :inbox,
+                                 target: "boosts_message_#{@boost.message.client_message_id}",
                                  html: boost_html
     end
 
     def broadcast_remove
-      @boost.broadcast_remove_to @boost.message.room, :messages
+      @boost.broadcast_rooms.each do |room|
+        @boost.broadcast_remove_to room, :messages
+      end
       @boost.broadcast_remove_to :inbox
     end
 end
