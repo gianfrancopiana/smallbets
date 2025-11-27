@@ -562,8 +562,8 @@ export default function FeedIndex({
         </div>
 
         {sortedCards.length === 0 ? (
-          <div className="bg-background border-input rounded-lg border p-12 text-center">
-            <p className="text-muted-foreground">
+          <div className="py-6 text-center">
+            <p className="text-muted-foreground/60 text-xs">
               Nothing here yet. Check back soon!
             </p>
           </div>
