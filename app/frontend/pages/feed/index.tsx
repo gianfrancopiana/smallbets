@@ -573,7 +573,9 @@ export default function FeedIndex({
               <FeedCard
                 key={card.id}
                 card={card}
-                isLast={index === sortedCards.length - 1 && !hasMoreByView[view]}
+                isLast={
+                  index === sortedCards.length - 1 && !hasMoreByView[view]
+                }
               />
             ))}
 
