@@ -1,19 +1,23 @@
 class FeedController < AuthenticatedController
   include RoomParticipants
 
+  INITIAL_CARDS_LIMIT = 20
+  LOAD_MORE_LIMIT = 30
+
   before_action :ensure_admin_can_view_feed, only: [:index]
   before_action :require_administrator, only: [:destroy]
   before_action :set_feed_card, only: [:destroy]
 
   def index
     view = permitted_view(params[:view])
-
-    cards_by_view = feed_cards_by_view
-    payload_by_view = build_cards_payload(cards_by_view)
-    selected_cards = payload_by_view.fetch(view) { [] }
+    page = (params[:page] || 1).to_i
+    per_page = page == 1 ? INITIAL_CARDS_LIMIT : LOAD_MORE_LIMIT
 
     respond_to do |format|
       format.html do
+        cards_by_view = feed_cards_by_view(limit: INITIAL_CARDS_LIMIT)
+        payload_by_view = build_cards_payload(cards_by_view)
+
         @page_title = "Home"
         @body_class = "sidebar feed-home"
 
@@ -28,6 +32,10 @@ class FeedController < AuthenticatedController
           props: {
             cardsByView: payload_by_view,
             initialView: view,
+            pagination: {
+              initialLimit: INITIAL_CARDS_LIMIT,
+              loadMoreLimit: LOAD_MORE_LIMIT,
+            },
             assets: {
               searchIcon: view_context.asset_path("search.svg"),
             },
@@ -46,7 +54,16 @@ class FeedController < AuthenticatedController
       end
 
       format.json do
-        render json: { feedCards: selected_cards }
+        offset = (page - 1) * per_page
+        cards_by_view = feed_cards_by_view(limit: per_page, offset: offset)
+        payload_by_view = build_cards_payload(cards_by_view)
+        selected_cards = payload_by_view.fetch(view) { [] }
+
+        render json: {
+          feedCards: selected_cards,
+          hasMore: selected_cards.length >= per_page,
+          page: page
+        }
       end
     end
   end
@@ -67,13 +84,12 @@ class FeedController < AuthenticatedController
     view_param == "new" ? "new" : "top"
   end
 
-  def feed_cards_by_view
-    top_cards = HomeFeed::Ranker.top(limit: 100)
-    new_cards = HomeFeed::Ranker.new(limit: 100)
+  def feed_cards_by_view(limit: 100, offset: 0)
+    @ranker_result = HomeFeed::Ranker.all(limit: limit, offset: offset)
 
     {
-      "top" => top_cards,
-      "new" => new_cards,
+      "top" => @ranker_result.top,
+      "new" => @ranker_result.new,
     }
   end
 
@@ -82,7 +98,10 @@ class FeedController < AuthenticatedController
     return { top: [], new: [] } if combined_cards.empty?
 
     feed_cards = AutomatedFeedCard
-                     .includes(room: [:messages, :memberships, :source_room], preview_message: { creator: { avatar_attachment: :blob } })
+                     .includes(
+                       room: :source_room,
+                       preview_message: [:rich_text_body, { creator: { avatar_attachment: :blob } }]
+                     )
                      .where(id: combined_cards.map(&:id))
                      .index_by(&:id)
 
@@ -91,51 +110,27 @@ class FeedController < AuthenticatedController
     return { top: [], new: [] } if loaded_cards.empty?
 
     room_ids = loaded_cards.map(&:room_id)
-
-    message_counts = Message.active.where(room_id: room_ids).group(:room_id).count
-    reaction_counts = Boost.active
-                           .joins(:message)
-                           .where(messages: { room_id: room_ids, active: true })
-                           .group("messages.room_id")
-                           .count
+    ranker_metrics = @ranker_result.metrics
+    boost_data = load_boost_data(room_ids)
 
     last_message_times = Message.active
                                .where(room_id: room_ids)
                                .group(:room_id)
                                .maximum(:created_at)
 
-    last_reaction_times = Boost.active
-                               .joins(:message)
-                               .where(messages: { room_id: room_ids, active: true })
-                               .group("messages.room_id")
-                               .maximum("boosts.created_at")
-
     last_activity_by_room = room_ids.index_with do |room_id|
-      [last_message_times[room_id], last_reaction_times[room_id]].compact.max
+      [last_message_times[room_id], boost_data[:last_reaction_times][room_id]].compact.max
     end
 
     participants_by_room = participants_for_rooms(room_ids)
-
-    top_reactions_by_room = Boost.active
-                                  .joins(:message)
-                                  .where(messages: { room_id: room_ids, active: true })
-                                  .group("messages.room_id", "boosts.content")
-                                  .count
-                                  .group_by { |(room_id, _), _| room_id }
-                                  .transform_values do |reactions|
-                                    reactions
-                                      .sort_by { |_, count| -count }
-                                      .filter { |(_, content), _| content.to_s.all_emoji? }
-                                      .first(5)
-                                      .map { |(_, emoji), _| emoji }
-                                  end
 
     payload_by_id = {}
 
     loaded_cards.each do |card|
       room = card.room
-      message_count = message_counts[room.id] || 0
-      reaction_count = reaction_counts[room.id] || 0
+      room_metrics = ranker_metrics[room.id] || { messages: 0, reactions: 0 }
+      message_count = room_metrics[:messages]
+      reaction_count = room_metrics[:reactions]
 
       participants = Array(participants_by_room[room.id]).map do |user|
         {
@@ -167,7 +162,7 @@ class FeedController < AuthenticatedController
           lastActiveAt: last_activity_by_room[room.id]&.iso8601,
           messageCount: message_count,
           reactionCount: reaction_count,
-          reactions: top_reactions_by_room[room.id] || [],
+          reactions: boost_data[:top_reactions][room.id] || [],
           participants: participants
         }
       }
@@ -304,12 +299,45 @@ class FeedController < AuthenticatedController
     return nil if room_name.blank?
 
     emoji_pattern = /\A([\p{Emoji_Presentation}\p{Extended_Pictographic}]|[\p{Emoji}]\uFE0F)/
-    
+
     if match = room_name.match(emoji_pattern)
       match[1]
     else
       room_name.strip[0]&.upcase
     end
+  end
+
+  def load_boost_data(room_ids)
+    raw_data = Boost.active
+                    .joins(:message)
+                    .where(messages: { room_id: room_ids, active: true })
+                    .group("messages.room_id", "boosts.content")
+                    .pluck(
+                      Arel.sql("messages.room_id"),
+                      Arel.sql("boosts.content"),
+                      Arel.sql("COUNT(*)"),
+                      Arel.sql("MAX(boosts.created_at)")
+                    )
+
+    last_reaction_times = {}
+    reactions_by_room = Hash.new { |h, k| h[k] = [] }
+
+    raw_data.each do |room_id, content, count, max_time|
+      current_max = last_reaction_times[room_id]
+      last_reaction_times[room_id] = max_time if current_max.nil? || max_time > current_max
+      reactions_by_room[room_id] << [content, count] if content.to_s.all_emoji?
+    end
+
+    top_reactions = reactions_by_room.transform_values do |reactions|
+      reactions.sort_by { |_, count| -count }
+               .first(5)
+               .map(&:first)
+    end
+
+    {
+      last_reaction_times: last_reaction_times,
+      top_reactions: top_reactions
+    }
   end
 
 end
