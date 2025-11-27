@@ -10,7 +10,7 @@ class Accounts::UsersControllerTest < ActionDispatch::IntegrationTest
 
     put account_user_url(users(:david)), params: { user: { role: "administrator" } }
 
-    assert_redirected_to edit_account_url
+    assert_redirected_to user_url(users(:david))
     assert users(:david).reload.administrator?
   end
 

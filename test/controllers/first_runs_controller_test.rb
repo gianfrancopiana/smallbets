@@ -2,9 +2,12 @@ require "test_helper"
 
 class FirstRunsControllerTest < ActionDispatch::IntegrationTest
   setup do
-    Account.destroy_all
-    User.destroy_all
+    Boost.destroy_all
+    Message.destroy_all
+    Membership.destroy_all
     Room.destroy_all
+    User.destroy_all
+    Account.destroy_all
   end
 
   test "new is permitted when no other users exit" do

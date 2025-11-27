@@ -103,7 +103,7 @@ module Vimeo
 
     def query_params
       {
-        "fields" => "pictures.base_link,pictures.sizes.link,pictures.sizes.width,pictures.sizes.height"
+        "fields" => "pictures.base_link,pictures.sizes.link,pictures.sizes.width,pictures.sizes.height,duration"
       }
     end
 

@@ -73,7 +73,7 @@ module Api
       end
 
       def fields
-        "pictures.base_link,pictures.sizes.link,pictures.sizes.width,pictures.sizes.height"
+        "pictures.base_link,pictures.sizes.link,pictures.sizes.width,pictures.sizes.height,duration"
       end
 
       def auth_headers
