@@ -166,19 +166,28 @@ namespace :feed do
     puts "=" * 80
   end
 
-  desc "Shift message timestamps to recent (for testing with old data)"
-  task :shift_timestamps, [:days_back, :reset_in_feed] => :environment do |_t, args|
+  desc "Shift message, room, and membership timestamps to recent (for testing with old data)"
+  task :shift_timestamps, [:days_back, :reset_in_feed, :shift_days] => :environment do |_t, args|
     days_back = (args[:days_back] || "7").to_i
     reset_in_feed = args[:reset_in_feed] == "true"
+    shift_days = args[:shift_days] ? args[:shift_days].to_i : nil
     
-    cutoff_time = days_back.days.ago
-    
-    puts "Finding messages from the last #{days_back} days (since #{cutoff_time.strftime('%Y-%m-%d %H:%M:%S')})..."
-    
-    messages = Message.active
-                      .where("created_at >= ?", cutoff_time)
-                      .where.not(room_id: Room.where.not(source_room_id: nil).select(:id))
-                      .order(:created_at)
+    # If days_back is 0 or negative, process ALL messages
+    if days_back <= 0
+      puts "Finding ALL messages..."
+      messages = Message.active
+                        .where.not(room_id: Room.where.not(source_room_id: nil).select(:id))
+                        .order(:created_at)
+      cutoff_time = messages.first&.created_at || Time.current
+    else
+      cutoff_time = days_back.days.ago
+      puts "Finding messages from the last #{days_back} days (since #{cutoff_time.strftime('%Y-%m-%d %H:%M:%S')})..."
+      
+      messages = Message.active
+                        .where("created_at >= ?", cutoff_time)
+                        .where.not(room_id: Room.where.not(source_room_id: nil).select(:id))
+                        .order(:created_at)
+    end
     
     count = messages.count
     puts "Found #{count} messages to shift"
@@ -192,12 +201,17 @@ namespace :feed do
     most_recent_message = messages.last
     most_recent_time = most_recent_message.created_at
     
-    # Calculate delta: how much to shift to make the most recent message appear as "now"
-    time_delta = Time.current - most_recent_time
-    
-    puts "\nMost recent message: #{most_recent_time.strftime('%Y-%m-%d %H:%M:%S')}"
-    puts "Shifting all messages forward by #{time_delta.to_i} seconds (#{(time_delta / 1.hour).round(2)} hours)"
-    puts "Most recent message will appear as: #{Time.current.strftime('%Y-%m-%d %H:%M:%S')}"
+    # Calculate delta: either fixed shift amount or shift to "now"
+    if shift_days
+      time_delta = shift_days.days
+      puts "\nShifting all messages forward by #{shift_days} days (preserving relative timing)..."
+      puts "Most recent message: #{most_recent_time.strftime('%Y-%m-%d %H:%M:%S')} → #{(most_recent_time + time_delta).strftime('%Y-%m-%d %H:%M:%S')}"
+    else
+      time_delta = Time.current - most_recent_time
+      puts "\nMost recent message: #{most_recent_time.strftime('%Y-%m-%d %H:%M:%S')}"
+      puts "Shifting all messages forward by #{time_delta.to_i} seconds (#{(time_delta / 1.hour).round(2)} hours)"
+      puts "Most recent message will appear as: #{Time.current.strftime('%Y-%m-%d %H:%M:%S')}"
+    end
     
     if reset_in_feed
       puts "\nResetting in_feed flags..."
@@ -227,8 +241,44 @@ namespace :feed do
     
     puts "\n✓ Shifted #{count} messages forward"
     puts "  Oldest message: #{cutoff_time.strftime('%Y-%m-%d %H:%M:%S')} → #{(cutoff_time + time_delta).strftime('%Y-%m-%d %H:%M:%S')}"
-    puts "  Most recent: #{most_recent_time.strftime('%Y-%m-%d %H:%M:%S')} → #{Time.current.strftime('%Y-%m-%d %H:%M:%S')}"
+    if shift_days
+      puts "  Most recent: #{most_recent_time.strftime('%Y-%m-%d %H:%M:%S')} → #{(most_recent_time + time_delta).strftime('%Y-%m-%d %H:%M:%S')}"
+    else
+      puts "  Most recent: #{most_recent_time.strftime('%Y-%m-%d %H:%M:%S')} → #{Time.current.strftime('%Y-%m-%d %H:%M:%S')}"
+    end
     puts "  Relative timing preserved ✓"
+
+    # Shift room timestamps (last_active_at is used in the sidebar)
+    puts "\nShifting room timestamps..."
+    rooms = Room.where("last_active_at >= ?", cutoff_time - time_delta)
+    room_count = rooms.count
+    rooms.find_each do |room|
+      room.update_columns(
+        last_active_at: room.last_active_at + time_delta,
+        updated_at: room.updated_at + time_delta
+      )
+    end
+    puts "✓ Shifted #{room_count} rooms forward"
+
+    # Shift membership timestamps (unread_at and connected_at are used in the sidebar)
+    puts "\nShifting membership timestamps..."
+    memberships = Membership.where("unread_at >= ?", cutoff_time - time_delta)
+    membership_count = memberships.count
+    memberships.find_each do |m|
+      updates = { updated_at: m.updated_at + time_delta }
+      updates[:unread_at] = m.unread_at + time_delta if m.unread_at
+      updates[:connected_at] = m.connected_at + time_delta if m.connected_at && m.connected_at >= cutoff_time - time_delta
+      m.update_columns(updates)
+    end
+    puts "✓ Shifted #{membership_count} memberships forward"
+
+    puts "\n" + "=" * 60
+    puts "Summary:"
+    puts "  Messages:    #{count}"
+    puts "  Rooms:       #{room_count}"
+    puts "  Memberships: #{membership_count}"
+    puts "  Time delta:  #{(time_delta / 1.day).round(1)} days"
+    puts "=" * 60
   end
 
   desc "Reset in_feed flags for messages (makes them eligible for scanning again)"
