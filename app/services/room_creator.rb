@@ -149,17 +149,18 @@ class RoomCreator
     # Copy all memberships from the source room to the conversation room
     # This is much more efficient than granting to all users (7800+)
     # and ensures the conversation room has the same access as the source room
-    source_members = @source_room.memberships.active
+    source_user_ids = @source_room.memberships.active
                                   .joins(:user)
                                   .merge(User.active)
-                                  .pluck(:user_id, :involvement)
+                                  .pluck(:user_id)
     
-    if source_members.any?
-      membership_records = source_members.map do |(user_id, involvement)|
+    if source_user_ids.any?
+      default_involvement = conversation_room.default_involvement
+      membership_records = source_user_ids.map do |user_id|
         {
           room_id: conversation_room.id,
           user_id: user_id,
-          involvement: involvement,
+          involvement: default_involvement,
           active: true
         }
       end
@@ -169,7 +170,7 @@ class RoomCreator
         unique_by: %i[room_id user_id]
       )
       
-      Rails.logger.info "[RoomCreator] Copied #{source_members.count} memberships from source room #{@source_room.id}"
+      Rails.logger.info "[RoomCreator] Copied #{source_user_ids.count} memberships from source room #{@source_room.id}"
     end
   end
 end
