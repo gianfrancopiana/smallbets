@@ -5,11 +5,14 @@
 
 <% last_active_at = room.last_active_at || room.created_at || Time.current %>
 
+<% hide_in_starred_list = list_name == :starred_rooms && involvement != "everything" %>
+
 <div id="<%= dom_id(room, dom_prefix(list_name, :list_node)) %>" data-sorted-list-target="item"
      data-name="<%= room.sortable_name %>" data-search-text="<%= room.sortable_name %>" data-size="<%= room.messages_count %>"
      data-updated-at="<%= last_active_at.iso8601 %>"
      data-sidebar-starred-rooms-target="room" data-involvement="<%= involvement %>"
      data-type="list_node"
+     <%= "hidden" if hide_in_starred_list %>
      class="flex gap align-center justify-space-between">
     <%= link_to_room room,
                      class: [ "flex flex-item-grow gap align-center justify-space-between room full-height txt-nowrap overflow-ellipsis txt-lighter txt-undecorated pad-block position-relative", "unread": unread, "badge": has_notifications ],

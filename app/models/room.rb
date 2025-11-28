@@ -201,7 +201,11 @@ class Room < ApplicationRecord
 
     def broadcast_reactivation
       [ :starred_rooms, :shared_rooms ].each do |list_name|
-        broadcast_append_to :rooms, target: list_name, partial: "users/sidebars/rooms/shared", locals: { list_name:, room: self }, attributes: { maintain_scroll: true }
+        Sidebar::Broadcasting.append_to :rooms, target: list_name,
+                                            room: self,
+                                            partial: "users/sidebars/rooms/shared",
+                                            locals: { list_name:, room: self },
+                                            attributes: { maintain_scroll: true }
       end
     end
 end

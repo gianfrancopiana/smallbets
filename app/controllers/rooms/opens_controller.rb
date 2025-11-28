@@ -35,7 +35,10 @@ class Rooms::OpensController < RoomsController
 
     def broadcast_create_room
       for_each_sidebar_section do |list_name|
-        broadcast_append_to :rooms, target: list_name, partial: "users/sidebars/rooms/shared", locals: { list_name:, room: @room }, attributes: { maintain_scroll: true }
+        broadcast_sidebar_append_to :rooms, target: list_name, room: @room,
+                                     partial: "users/sidebars/rooms/shared",
+                                     locals: { list_name:, room: @room },
+                                     attributes: { maintain_scroll: true }
       end
     end
 end

@@ -121,7 +121,7 @@ class MessagesController < ApplicationController
     end
 
     def refresh_shared_rooms(user)
-      memberships = user.memberships.shared.visible
+      memberships = user.memberships.shared.visible.without_conversation_rooms
       {
         starred_rooms: memberships.with_room_by_last_active_newest_first,
         shared_rooms: memberships.with_room_by_last_active_newest_first

@@ -9,7 +9,10 @@ class RoomMembershipBroadcastJob < ApplicationJob
 
     for_each_sidebar_section do |list_name|
       html = render_partial_for(membership, list_name)
-      broadcast_replace_to membership.user, :rooms, target: [ membership.room, helpers.dom_prefix(list_name, :list_node) ], html: html
+      Sidebar::Broadcasting.replace_to membership.user, :rooms,
+                                       membership:,
+                                       target: [ membership.room, helpers.dom_prefix(list_name, :list_node) ],
+                                       html: html
     end
   end
 
@@ -26,10 +29,6 @@ class RoomMembershipBroadcastJob < ApplicationJob
     [ :starred_rooms, :shared_rooms ].each do |name|
       yield name
     end
-  end
-
-  def broadcast_replace_to(stream, *args)
-    Turbo::StreamsChannel.broadcast_replace_to(stream, *args)
   end
 
   def helpers
