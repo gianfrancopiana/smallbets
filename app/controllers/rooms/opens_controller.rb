@@ -34,8 +34,6 @@ class Rooms::OpensController < RoomsController
     end
 
     def broadcast_create_room
-      return unless sidebar_room_visible?(@room)
-
       for_each_sidebar_section do |list_name|
         broadcast_sidebar_append_to :rooms, target: list_name, room: @room,
                                      partial: "users/sidebars/rooms/shared",

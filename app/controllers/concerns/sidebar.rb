@@ -8,9 +8,6 @@ module Sidebar
       room.present? && !room.conversation_room?
     end
 
-    def membership_visible?(membership)
-      membership.present? && room_visible?(membership.room)
-    end
   end
 
   module Broadcasting
@@ -38,7 +35,7 @@ module Sidebar
   end
 
   included do
-    helper_method :for_each_sidebar_section, :sidebar_room_visible?, :sidebar_membership_visible?
+    helper_method :for_each_sidebar_section, :sidebar_room_visible?
   end
 
   def set_sidebar_memberships
@@ -71,10 +68,6 @@ module Sidebar
 
   def sidebar_room_visible?(room)
     Visibility.room_visible?(room)
-  end
-
-  def sidebar_membership_visible?(membership)
-    Visibility.membership_visible?(membership)
   end
 
   def broadcast_sidebar_append_to(stream, *stream_names, **options)

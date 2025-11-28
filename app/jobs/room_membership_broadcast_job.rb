@@ -12,7 +12,7 @@ class RoomMembershipBroadcastJob < ApplicationJob
       Sidebar::Broadcasting.replace_to membership.user, :rooms,
                                        membership:,
                                        target: [ membership.room, helpers.dom_prefix(list_name, :list_node) ],
-                                       html:
+                                       html: html
     end
   end
 
