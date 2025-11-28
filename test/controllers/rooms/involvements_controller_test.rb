@@ -47,4 +47,18 @@ class Rooms::InvolvementsControllerTest < ActionDispatch::IntegrationTest
     end
     end
   end
+
+  test "conversation rooms never broadcast to the sidebar" do
+    parent_room = rooms(:watercooler)
+    conversation_room = Rooms::Closed.create!(name: "Spin-off", creator: users(:david), source_room: parent_room)
+    membership = conversation_room.memberships.create!(user: users(:david), involvement: :mentions)
+
+    ActionCable.server.pubsub.clear
+    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 0 do
+    assert_changes -> { membership.reload.involvement }, from: "mentions", to: "everything" do
+      put room_involvement_url(conversation_room), params: { involvement: "everything" }
+      assert_redirected_to room_involvement_url(conversation_room)
+    end
+    end
+  end
 end

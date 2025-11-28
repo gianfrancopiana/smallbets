@@ -40,10 +40,11 @@ class Rooms::InvolvementsController < ApplicationController
 
     def broadcast_involvement_change_to_sidebar
       for_each_sidebar_section do |list_name|
-        broadcast_replace_to @membership.user, :rooms,
-                             target: [ @room, helpers.dom_prefix(list_name, :list_node) ],
-                             partial: "users/sidebars/rooms/shared",
-                             locals: { list_name:, membership: @membership }
+        broadcast_sidebar_replace_to @membership.user, :rooms,
+                                     room: @room,
+                                     target: [ @room, helpers.dom_prefix(list_name, :list_node) ],
+                                     partial: "users/sidebars/rooms/shared",
+                                     locals: { list_name:, membership: @membership }
       end
     end
 
@@ -55,9 +56,9 @@ class Rooms::InvolvementsController < ApplicationController
         end
       when @membership.involvement_previously_was.inquiry.invisible?
         for_each_sidebar_section do |list_name|
-          broadcast_append_to @membership.user, :rooms, target: list_name,
-                              partial: "users/sidebars/rooms/shared", locals: { list_name:, membership: @membership },
-                              attributes: { maintain_scroll: true }
+          broadcast_sidebar_append_to @membership.user, :rooms, room: @room, target: list_name,
+                                      partial: "users/sidebars/rooms/shared", locals: { list_name:, membership: @membership },
+                                      attributes: { maintain_scroll: true }
         end
       end
     end

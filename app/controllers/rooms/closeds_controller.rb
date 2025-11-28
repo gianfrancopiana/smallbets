@@ -51,17 +51,21 @@ class Rooms::ClosedsController < RoomsController
     end
 
     def broadcast_create_room(room)
+      return unless sidebar_room_visible?(room)
+
       for_each_sidebar_section do |list_name|
         each_user_and_html_for_create(room, list_name:) do |user, html|
-          broadcast_append_to user, :rooms, target: list_name, html: html, attributes: { maintain_scroll: true }
+          broadcast_sidebar_append_to user, :rooms, room:, target: list_name, html: html, attributes: { maintain_scroll: true }
         end
       end
     end
 
     def broadcast_update_room
+      return unless sidebar_room_visible?(@room)
+
       for_each_sidebar_section do |list_name|
         each_user_and_html_for(@room, list_name:) do |user, html|
-          broadcast_replace_to user, :rooms, target: [ @room, helpers.dom_prefix(list_name, :list_node) ], html: html
+          broadcast_sidebar_replace_to user, :rooms, room: @room, target: [ @room, helpers.dom_prefix(list_name, :list_node) ], html: html
         end
       end
     end
