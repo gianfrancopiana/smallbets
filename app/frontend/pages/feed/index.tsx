@@ -3,14 +3,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { KeyboardEvent, MouseEvent } from "react"
 import { createPortal } from "react-dom"
 import { toast } from "sonner"
+import { MoreHorizontal, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { MaskedIcon } from "@/components/ui/masked-icon"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MaskedIcon } from "@/components/ui/masked-icon"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface FeedCardPayload {
   id: number
@@ -64,10 +76,15 @@ interface PaginationConfig {
   loadMoreLimit: number
 }
 
+interface ViewerPayload {
+  isAdministrator: boolean
+}
+
 interface FeedPageProps {
   cardsByView: CardsByView
   initialView: ViewType
   pagination: PaginationConfig
+  viewer?: ViewerPayload
   layout: FeedLayoutPayload
   assets?: {
     searchIcon?: string
@@ -113,10 +130,16 @@ function formatActivityStatus(lastActiveAt: string | null): string {
 function FeedCard({
   card,
   isLast,
+  isAdministrator,
+  onDelete,
 }: {
   card: FeedCardPayload
   isLast: boolean
+  isAdministrator: boolean
+  onDelete?: (cardId: number) => void
 }) {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
   const roomUrl = card.room.slug
     ? `/${card.room.slug}`
     : `/rooms/${card.room.id}`
@@ -131,7 +154,7 @@ function FeedCard({
     }
 
     const interactive = (event.target as HTMLElement | null)?.closest(
-      "a, button, [role='button'], [role='link']",
+      "a, button, [role='button'], [role='link'], [data-radix-collection-item]",
     )
     if (interactive && interactive !== event.currentTarget) {
       return
@@ -155,7 +178,7 @@ function FeedCard({
     if (event.defaultPrevented) return
 
     const interactive = (event.target as HTMLElement | null)?.closest(
-      "a, button, [role='button'], [role='link']",
+      "a, button, [role='button'], [role='link'], [data-radix-collection-item]",
     )
     if (interactive && interactive !== event.currentTarget) {
       return
@@ -165,6 +188,15 @@ function FeedCard({
       event.preventDefault()
       window.location.href = roomUrl
     }
+  }
+
+  function handleDeleteClick() {
+    setIsDeleteDialogOpen(true)
+  }
+
+  function handleConfirmDelete() {
+    setIsDeleteDialogOpen(false)
+    onDelete?.(card.id)
   }
 
   return (
@@ -200,6 +232,57 @@ function FeedCard({
               </p>
             )}
           </div>
+
+          {isAdministrator && (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground hover:text-foreground -mr-2 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+                    aria-label="Card options"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onSelect={handleDeleteClick}
+                  >
+                    <Trash2 className="mr-2 size-4" />
+                    Delete card
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <AlertDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this card?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete the feed card and its
+                      associated conversation room. This action cannot be
+                      undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={handleConfirmDelete}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </div>
 
         <div className="mb-3 flex flex-col gap-1">
@@ -329,12 +412,14 @@ export default function FeedIndex({
   cardsByView,
   initialView,
   pagination,
+  viewer,
   layout,
   assets,
   flash,
 }: FeedPageProps) {
   const { url } = usePage()
 
+  const isAdministrator = viewer?.isAdministrator ?? false
   const derivedInitialView: ViewType = initialView ?? "top"
   const [view, setView] = useState<ViewType>(derivedInitialView)
   const [cardsState, setCardsState] = useState<CardsByView>(() => ({
@@ -354,6 +439,7 @@ export default function FeedIndex({
   )
   const [isLoading, setIsLoading] = useState(false)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const previousCardsRef = useRef<CardsByView | null>(null)
 
   const loadMoreCards = useCallback(async () => {
     if (isLoading || !hasMoreByView[view]) return
@@ -493,6 +579,52 @@ export default function FeedIndex({
     window.history.replaceState({}, "", targetUrl.toString())
   }
 
+  async function handleDeleteCard(cardId: number) {
+    // Store current state for rollback
+    previousCardsRef.current = { ...cardsState }
+
+    // Optimistic update: remove card from both views
+    setCardsState((prev) => ({
+      top: prev.top.filter((c) => c.id !== cardId),
+      new: prev.new.filter((c) => c.id !== cardId),
+    }))
+
+    try {
+      const csrfToken = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content")
+
+      const response = await fetch(`/feed/${cardId}`, {
+        method: "DELETE",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(
+          response.status === 403
+            ? "You don't have permission to delete this card"
+            : "Failed to delete card",
+        )
+      }
+
+      toast.success("Card deleted successfully")
+      previousCardsRef.current = null
+    } catch (error) {
+      // Rollback on failure
+      if (previousCardsRef.current) {
+        setCardsState(previousCardsRef.current)
+        previousCardsRef.current = null
+      }
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete card",
+      )
+    }
+  }
+
   const searchButton = (
     <div className="relative mr-3 ml-auto hidden items-center lg:flex">
       <Button
@@ -519,46 +651,26 @@ export default function FeedIndex({
 
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <div className="mt-6 mb-3 ml-1 flex items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="bg-background flex items-center justify-between gap-2 rounded-lg"
-              >
-                <span className="pointer-events-none text-sm">
-                  {view === "top" ? "Top" : "New"}
-                </span>
-                <svg
-                  className="pointer-events-none size-4 opacity-50"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                onClick={() => handleViewChange("top")}
-                className={view === "top" ? "bg-accent" : ""}
+          <Tabs
+            value={view}
+            onValueChange={(value) => handleViewChange(value as ViewType)}
+            className="w-auto"
+          >
+            <TabsList className="bg-background h-9 gap-0 rounded-lg border-0 p-0.5 shadow-none">
+              <TabsTrigger
+                value="top"
+                className="data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground border-0 px-3 py-1.5 text-sm font-medium shadow-none data-[state=active]:shadow-none"
               >
                 Top
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleViewChange("new")}
-                className={view === "new" ? "bg-accent" : ""}
+              </TabsTrigger>
+              <TabsTrigger
+                value="new"
+                className="data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground border-0 px-3 py-1.5 text-sm font-medium shadow-none data-[state=active]:shadow-none"
               >
                 New
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {sortedCards.length === 0 ? (
@@ -576,6 +688,8 @@ export default function FeedIndex({
                 isLast={
                   index === sortedCards.length - 1 && !hasMoreByView[view]
                 }
+                isAdministrator={isAdministrator}
+                onDelete={handleDeleteCard}
               />
             ))}
 

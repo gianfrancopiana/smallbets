@@ -381,3 +381,26 @@ main#main-content:focus {
 /* Complex button styling with nested selectors and pseudo-classes maintained in CSS file */
 /* Base button class maintains core functionality via CSS, modifiers use Tailwind utilities */
 /* NOTE: Switch classes remain in inputs.css due to complex pseudo-elements and nested selectors */
+
+/* Alert dialog button overrides - prevent legacy CSS from resetting styles */
+[data-slot="alert-dialog-footer"] button {
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+[data-slot="alert-dialog-footer"] button[data-variant="destructive"] {
+  background-color: var(--destructive);
+  color: white;
+}
+
+[data-slot="alert-dialog-footer"] button[data-variant="destructive"]:hover {
+  opacity: 0.9;
+}
+
+[data-slot="alert-dialog-footer"] button[data-variant="outline"] {
+  border: 1px solid var(--input);
+  background-color: var(--background);
+}

@@ -21,9 +21,11 @@
       <%= local_datetime_tag last_active_at, style: :relative, class: "txt-x-small txt-primary txt-nowrap position-relative" %>
     <% end %>
 
-    <span class="txt-small">
-      <%= turbo_frame_tag dom_id(room, dom_prefix(:sidebar, :involvement)) do %>
-        <%= button_to_change_involvement(room, involvement, from_sidebar: true) %>
-      <% end %>
-    </span>
+    <% unless room.conversation_room? %>
+      <span class="txt-small">
+        <%= turbo_frame_tag dom_id(room, dom_prefix(:sidebar, :involvement)) do %>
+          <%= button_to_change_involvement(room, involvement, from_sidebar: true) %>
+        <% end %>
+      </span>
+    <% end %>
 </div>

@@ -35,6 +35,9 @@ class FeedController < AuthenticatedController
               initialLimit: INITIAL_CARDS_LIMIT,
               loadMoreLimit: LOAD_MORE_LIMIT,
             },
+            viewer: {
+              isAdministrator: Current.user&.administrator? || false,
+            },
             assets: {
               searchIcon: view_context.asset_path("search.svg"),
             },
@@ -74,7 +77,10 @@ class FeedController < AuthenticatedController
       room.deactivate
     end
 
-    redirect_to root_path, notice: "Feed card and room deleted successfully"
+    respond_to do |format|
+      format.json { head :no_content }
+      format.html { redirect_to root_path, notice: "Feed card and room deleted successfully" }
+    end
   end
 
   private
@@ -190,8 +196,13 @@ class FeedController < AuthenticatedController
   def set_feed_card
     @feed_card = AutomatedFeedCard.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    flash[:alert] = "Feed card not found"
-    redirect_to root_path
+    respond_to do |format|
+      format.json { head :not_found }
+      format.html do
+        flash[:alert] = "Feed card not found"
+        redirect_to root_path
+      end
+    end
   end
 
   def require_administrator

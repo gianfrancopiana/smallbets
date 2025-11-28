@@ -17,13 +17,15 @@
 
   <% if room.thread? %>
     <%= link_back_to room_at_message_path(room.parent_message.room, room.parent_message) %>
+  <% elsif room.conversation_room? %>
+    <%= link_back_to root_path %>
   <% else %>
     <%= link_to_edit_room(room) %>
   <% end %>
 
   <% unless hotwire_native_app? %>
     <div class="flex gap-half align-center">
-      <% unless room.direct? || room.thread? %>
+      <% unless room.direct? || room.thread? || room.conversation_room? %>
         <%= turbo_frame_tag dom_id(room, :involvement) do %>
           <%= button_to_change_involvement(room, @membership.involvement) %>
         <% end %>
