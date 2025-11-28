@@ -4,12 +4,7 @@ import type { KeyboardEvent, MouseEvent } from "react"
 import { createPortal } from "react-dom"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MaskedIcon } from "@/components/ui/masked-icon"
 
 interface FeedCardPayload {
@@ -519,46 +514,26 @@ export default function FeedIndex({
 
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         <div className="mt-6 mb-3 ml-1 flex items-center">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="bg-background flex items-center justify-between gap-2 rounded-lg"
-              >
-                <span className="pointer-events-none text-sm">
-                  {view === "top" ? "Top" : "New"}
-                </span>
-                <svg
-                  className="pointer-events-none size-4 opacity-50"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem
-                onClick={() => handleViewChange("top")}
-                className={view === "top" ? "bg-accent" : ""}
+          <Tabs
+            value={view}
+            onValueChange={(value) => handleViewChange(value as ViewType)}
+            className="w-auto"
+          >
+            <TabsList className="bg-background h-9 gap-0 rounded-lg border-0 p-0.5 shadow-none">
+              <TabsTrigger
+                value="top"
+                className="data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground border-0 px-3 py-1.5 text-sm font-medium shadow-none data-[state=active]:shadow-none"
               >
                 Top
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleViewChange("new")}
-                className={view === "new" ? "bg-accent" : ""}
+              </TabsTrigger>
+              <TabsTrigger
+                value="new"
+                className="data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground data-[state=inactive]:hover:text-foreground border-0 px-3 py-1.5 text-sm font-medium shadow-none data-[state=active]:shadow-none"
               >
                 New
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {sortedCards.length === 0 ? (
