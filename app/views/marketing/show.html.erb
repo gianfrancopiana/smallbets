@@ -12,7 +12,7 @@
   <!-- Header Section -->
   <header class="py-4">
     <div class="container" style="display: flex; justify-content: flex-end; gap: 1rem;">
-      <a href="/chat" class="btn btn-outline uppercase font-bold text-lg py-2 px-4 md:py-2 md:px-4">Sign In</a>
+      <%= link_to "Sign In", new_session_path, class: "btn btn-outline uppercase font-bold text-lg py-2 px-4 md:py-2 md:px-4" %>
       <a href="<%= join_url %>" class="btn btn-primary uppercase font-bold text-lg py-2 px-4 md:py-2 md:px-4">Join Now</a>
     </div>
   </header>
