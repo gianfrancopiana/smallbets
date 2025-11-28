@@ -240,7 +240,7 @@ function FeedCard({
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    className="text-muted-foreground hover:text-foreground -mr-2 opacity-0 transition-opacity group-hover:opacity-100"
+                    className="text-muted-foreground hover:text-foreground -mr-2 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
                     aria-label="Card options"
                   >
                     <MoreHorizontal className="size-4" />
@@ -273,7 +273,7 @@ function FeedCard({
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      className="bg-destructive hover:bg-destructive/90 text-white"
+                      variant="destructive"
                       onClick={handleConfirmDelete}
                     >
                       Delete
