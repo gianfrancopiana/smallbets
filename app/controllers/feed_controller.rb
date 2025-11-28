@@ -4,7 +4,6 @@ class FeedController < AuthenticatedController
   INITIAL_CARDS_LIMIT = 20
   LOAD_MORE_LIMIT = 30
 
-  before_action :ensure_admin_can_view_feed, only: [:index]
   before_action :require_administrator, only: [:destroy]
   before_action :set_feed_card, only: [:destroy]
 
@@ -197,17 +196,6 @@ class FeedController < AuthenticatedController
 
   def require_administrator
     head :forbidden unless Current.user&.administrator?
-  end
-
-  # TODO: Remove once the feed becomes available to everyone.
-  def ensure_admin_can_view_feed
-    return if Current.user&.administrator?
-
-    if request.format.html?
-      redirect_to talk_path, status: :see_other
-    else
-      head :forbidden
-    end
   end
 
   def set_layout_content(nav_markup:, sidebar_markup:)

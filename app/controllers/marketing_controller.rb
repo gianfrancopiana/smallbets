@@ -4,7 +4,7 @@ class MarketingController < ApplicationController
   allow_unauthenticated_access
   layout "marketing"
 
-  before_action :restore_authentication, :redirect_signed_in_user_to_chat, except: [ :join, :stats ]
+  before_action :restore_authentication, :redirect_signed_in_user_to_root, except: [ :join, :stats ]
 
   def show
     @user_count = User.active.non_suspended.count

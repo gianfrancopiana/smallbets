@@ -12,7 +12,7 @@ class SessionsController < ApplicationController
 
     if user&.authenticate(params[:password])
       start_new_session_for(user)
-      redirect_to chat_url
+      redirect_to root_url
     else
       render_rejection :unauthorized
     end

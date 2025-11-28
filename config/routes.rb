@@ -11,13 +11,8 @@ Rails.application.routes.draw do
     }, via: :all
   end
 
-  constraints(AdminConstraint.new) do
-    root to: "feed#index"
-  end
-
   constraints(lambda { |req| req.session[:user_id].present? }) do
-    # TODO: Remove once the temporary feed gating is no longer needed.
-    root to: "feed#index", as: :authenticated_root
+    root to: "feed#index"
   end
 
   constraints(lambda { |req| req.session[:user_id].blank? }) do

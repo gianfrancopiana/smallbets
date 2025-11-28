@@ -45,7 +45,6 @@ class RoomsController < ApplicationController
 
       if room
         @room = room
-        return if enforce_feed_conversation_access!(@room)
       else
         redirect_to root_url, alert: "Room not found or inaccessible"
       end

@@ -56,10 +56,6 @@ module Authentication
       redirect_to root_url if signed_in?
     end
 
-    def redirect_signed_in_user_to_chat
-      redirect_to chat_url if signed_in?
-    end
-
     def start_new_session_for(user)
       user.sessions.start!(user_agent: request.user_agent, ip_address: request.remote_ip).tap do |session|
         authenticated_as session
