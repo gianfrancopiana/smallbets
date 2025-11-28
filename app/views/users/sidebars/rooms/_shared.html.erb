@@ -3,9 +3,11 @@
 <% unread = local_assigns[:membership]&.unread? %>
 <% has_notifications = local_assigns[:membership]&.has_unread_notifications? %>
 
+<% last_active_at = room.last_active_at || room.created_at || Time.current %>
+
 <div id="<%= dom_id(room, dom_prefix(list_name, :list_node)) %>" data-sorted-list-target="item"
      data-name="<%= room.sortable_name %>" data-search-text="<%= room.sortable_name %>" data-size="<%= room.messages_count %>"
-     data-updated-at="<%= room.last_active_at.iso8601 %>"
+     data-updated-at="<%= last_active_at.iso8601 %>"
      data-sidebar-starred-rooms-target="room" data-involvement="<%= involvement %>"
      data-type="list_node"
      class="flex gap align-center justify-space-between">
@@ -16,7 +18,7 @@
 
       <hr class="separator flex-item-grow" aria-hidden="true">
 
-      <%= local_datetime_tag room.last_active_at, style: :relative, class: "txt-x-small txt-primary txt-nowrap position-relative" %>
+      <%= local_datetime_tag last_active_at, style: :relative, class: "txt-x-small txt-primary txt-nowrap position-relative" %>
     <% end %>
 
     <span class="txt-small">

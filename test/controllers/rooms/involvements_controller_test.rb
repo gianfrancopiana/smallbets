@@ -11,14 +11,16 @@ class Rooms::InvolvementsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "update involvement sends turbo update when becoming visible and when going invisible" do
-    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 1 do
+    ActionCable.server.pubsub.clear
+    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 4 do
     assert_changes -> { memberships(:david_watercooler).reload.involvement }, from: "everything", to: "invisible" do
       put room_involvement_url(rooms(:watercooler)), params: { involvement: "invisible" }
       assert_redirected_to room_involvement_url(rooms(:watercooler))
     end
     end
 
-    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 2 do
+    ActionCable.server.pubsub.clear
+    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 4 do
     assert_changes -> { memberships(:david_watercooler).reload.involvement }, from: "invisible", to: "everything" do
       put room_involvement_url(rooms(:watercooler)), params: { involvement: "everything" }
       assert_redirected_to room_involvement_url(rooms(:watercooler))
@@ -26,8 +28,9 @@ class Rooms::InvolvementsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "updating involvement does not send turbo update changing visible states" do
-    assert_no_turbo_stream_broadcasts [ users(:david), :rooms ] do
+  test "updating involvement sends turbo update when changing visible states" do
+    ActionCable.server.pubsub.clear
+    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 2 do
     assert_changes -> { memberships(:david_watercooler).reload.involvement }, from: "everything", to: "mentions" do
       put room_involvement_url(rooms(:watercooler)), params: { involvement: "mentions" }
       assert_redirected_to room_involvement_url(rooms(:watercooler))
@@ -35,8 +38,9 @@ class Rooms::InvolvementsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "updating involvement does not send turbo update for direct rooms" do
-    assert_no_turbo_stream_broadcasts [ users(:david), :rooms ] do
+  test "updating involvement sends turbo update for direct rooms" do
+    ActionCable.server.pubsub.clear
+    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 2 do
     assert_changes -> { memberships(:david_david_and_jason).reload.involvement }, from: "everything", to: "nothing" do
       put room_involvement_url(rooms(:david_and_jason)), params: { involvement: "nothing" }
       assert_redirected_to room_involvement_url(rooms(:david_and_jason))

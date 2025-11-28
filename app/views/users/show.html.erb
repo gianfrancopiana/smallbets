@@ -85,7 +85,7 @@
                     <%= link_to message.room.name, room_at_message_path(message.room, message) %>
                     · <%= time_ago_in_words(message.created_at) %> ago
                   </div>
-                  <div class="break-word"><%= truncate(message.body.to_plain_text, length: 100) %></div>
+                  <div class="break-word"><%= truncate(message.display_body.to_plain_text, length: 100) %></div>
                 </div>
               <% end %>
             </div>

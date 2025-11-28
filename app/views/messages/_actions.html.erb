@@ -77,7 +77,9 @@
           <span>Delete</span>
         <% end %>
 
-        <%= tag.button class: "btn message__action-btn full-width", data: { controller: "copy-to-clipboard", action: "copy-to-clipboard#copy", copy_to_clipboard_success_class: "btn--success", copy_to_clipboard_content_value: room_at_message_url(message.room, message) } do %>
+        <%= tag.button class: "btn message__action-btn full-width",
+                       title: "Copy link",
+                       data: { controller: "copy-to-clipboard", action: "copy-to-clipboard#copy", copy_to_clipboard_success_class: "btn--success", copy_to_clipboard_content_value: room_at_message_url(message.room, message) } do %>
           <span>Copy link</span>
         <% end %>
 

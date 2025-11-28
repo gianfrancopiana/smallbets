@@ -1,49 +1,75 @@
 module HomeFeed
   class Ranker
-    def self.top(limit: 50)
-      cards = AutomatedFeedCard.includes(room: [:messages, :source_room])
-                       .order(created_at: :desc)
-                       .limit(limit * 2)
-      
-      return [] if cards.empty?
-      
-      room_ids = cards.map { |card| card.room_id }
+    Result = Struct.new(:top, :new, :metrics, keyword_init: true)
+
+    def self.all(limit: 50, offset: 0)
+      fetch_limit = (limit + offset) * 2
+      cards = load_base_cards(fetch_limit)
+      return Result.new(top: [], new: [], metrics: {}) if cards.empty?
+
+      room_ids = cards.map(&:room_id)
       metrics = load_metrics(room_ids)
       earliest_times = load_earliest_times(room_ids)
-      
-      scored_cards = cards.map do |card|
+
+      Result.new(
+        top: rank_by_score(cards, metrics, earliest_times, limit, offset),
+        new: rank_by_recency(cards, earliest_times, limit, offset),
+        metrics: metrics
+      )
+    end
+
+    def self.top(limit: 50, offset: 0)
+      fetch_limit = (limit + offset) * 2
+      cards = load_base_cards(fetch_limit)
+      return [] if cards.empty?
+
+      room_ids = cards.map(&:room_id)
+      metrics = load_metrics(room_ids)
+      earliest_times = load_earliest_times(room_ids)
+
+      rank_by_score(cards, metrics, earliest_times, limit, offset)
+    end
+
+    def self.new(limit: 50, offset: 0)
+      fetch_limit = (limit + offset) * 2
+      cards = load_base_cards(fetch_limit)
+      return [] if cards.empty?
+
+      room_ids = cards.map(&:room_id)
+      earliest_times = load_earliest_times(room_ids)
+
+      rank_by_recency(cards, earliest_times, limit, offset)
+    end
+
+    def self.load_base_cards(limit)
+      AutomatedFeedCard.includes(room: :source_room)
+                       .order(created_at: :desc)
+                       .limit(limit)
+    end
+
+    def self.rank_by_score(cards, metrics, earliest_times, limit, offset = 0)
+      cards.map do |card|
         score = calculate_score(card, metrics, earliest_times[card.room_id])
         [card, score]
       end
-      
-      scored_cards.sort_by { |_, score| -score }
-                  .first(limit)
-                  .map(&:first)
+           .sort_by { |_, score| -score }
+           .drop(offset)
+           .first(limit)
+           .map(&:first)
     end
-    
-    def self.new(limit: 50)
-      cards = AutomatedFeedCard.includes(room: [:messages, :source_room])
-                       .order(created_at: :desc)
-                       .limit(limit * 2)
-      
-      return [] if cards.empty?
-      
-      room_ids = cards.map { |card| card.room_id }
-      earliest_times = load_earliest_times(room_ids)
-      
-      cards.map do |card|
-        earliest_time = earliest_times[card.room_id]
-        [card, earliest_time]
-      end
-          .select { |_, time| time.present? }
-          .sort_by { |_, time| time }
-          .reverse
-          .first(limit)
-          .map(&:first)
+
+    def self.rank_by_recency(cards, earliest_times, limit, offset = 0)
+      cards.map { |card| [card, earliest_times[card.room_id]] }
+           .select { |_, time| time.present? }
+           .sort_by { |_, time| time }
+           .reverse
+           .drop(offset)
+           .first(limit)
+           .map(&:first)
     end
-    
+
     private
-    
+
     def self.load_metrics(room_ids)
       message_counts = Message.active.where(room_id: room_ids).group(:room_id).count
       reaction_counts = Boost.active

@@ -3,6 +3,7 @@ class Messages::ByBotsController < MessagesController
 
   def create
     super
+    head :created unless performed?
   rescue LoadError
     head :service_unavailable
   end

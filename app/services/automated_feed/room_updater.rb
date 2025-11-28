@@ -1,5 +1,3 @@
-require "stringio"
-
 module AutomatedFeed
   class RoomUpdater
     class Error < StandardError; end
@@ -67,56 +65,13 @@ module AutomatedFeed
         existing = @feed_card.room.messages.find_by(original_message_id: original_message.id)
         next if existing
 
-        copied_message = @feed_card.room.messages.create!(
+        @feed_card.room.messages.create!(
           creator: original_message.creator,
           original_message: original_message,
           created_at: original_message.created_at,
           updated_at: original_message.updated_at,
           client_message_id: original_message.client_message_id,
-          body: original_message.body,
           mentions_everyone: original_message.mentions_everyone
-        )
-
-        copy_attachment(original_message, copied_message) if original_message.attachment?
-        copy_boosts(original_message, copied_message)
-      end
-    end
-
-    def copy_attachment(original_message, copied_message)
-      return unless original_message.attachment.attached?
-
-      begin
-        data = original_message.attachment.download
-      rescue ActiveStorage::FileNotFoundError => error
-        Rails.logger.warn("Skipped copying missing attachment for message #{original_message.id}: #{error.message}")
-        Sentry.capture_exception(error, extra: { message_id: original_message.id }) if defined?(Sentry)
-        return
-      end
-
-      io = StringIO.new(data)
-      io.rewind
-
-      copied_message.attachment.attach(
-        io: io,
-        filename: original_message.attachment.filename,
-        content_type: original_message.attachment.content_type
-      )
-
-      begin
-        copied_message.process_attachment
-      rescue ActiveStorage::FileNotFoundError => error
-        Rails.logger.warn("Unable to process copied attachment for message #{copied_message.id}: #{error.message}")
-        Sentry.capture_exception(error, extra: { message_id: copied_message.id }) if defined?(Sentry)
-      end
-    end
-
-    def copy_boosts(original_message, copied_message)
-      original_message.boosts.each do |boost|
-        copied_message.boosts.create!(
-          booster: boost.booster,
-          content: boost.content,
-          created_at: boost.created_at,
-          updated_at: boost.updated_at
         )
       end
     end

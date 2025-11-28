@@ -33,9 +33,10 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "index returns no_content when there are no messages" do
-    @room.messages.destroy_all
+    empty_room = Rooms::Open.create!(name: "Empty room", creator: users(:david))
+    empty_room.memberships.grant_to(users(:david))
 
-    get room_messages_url(@room)
+    get room_messages_url(empty_room)
 
     assert_response :no_content
   end
@@ -66,7 +67,7 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
   test "update updates a message belonging to the user" do
     message = @room.messages.where(creator: users(:david)).first
 
-    Turbo::StreamsChannel.expects(:broadcast_replace_to).once
+    Turbo::StreamsChannel.expects(:broadcast_replace_to).at_least_once
     put room_message_url(@room, message), params: { message: { body: "Updated body" } }
 
     assert_redirected_to room_message_url(@room, message)
@@ -76,7 +77,7 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
   test "admin updates a message belonging to another user" do
     message = @room.messages.where(creator: users(:jason)).first
 
-    Turbo::StreamsChannel.expects(:broadcast_replace_to).once
+    Turbo::StreamsChannel.expects(:broadcast_replace_to).at_least_once
     put room_message_url(@room, message), params: { message: { body: "Updated body" } }
 
     assert_redirected_to room_message_url(@room, message)
@@ -86,8 +87,8 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
   test "destroy destroys a message belonging to the user" do
     message = @room.messages.where(creator: users(:david)).first
 
-    assert_difference -> { Message.count }, -1 do
-      Turbo::StreamsChannel.expects(:broadcast_remove_to).once
+    assert_difference -> { Message.active.count }, -1 do
+      Turbo::StreamsChannel.expects(:broadcast_remove_to).at_least_once
       delete room_message_url(@room, message, format: :turbo_stream)
       assert_response :success
     end
@@ -97,8 +98,8 @@ class MessagesControllerTest < ActionDispatch::IntegrationTest
     assert users(:david).administrator?
     message = @room.messages.where(creator: users(:jason)).first
 
-    assert_difference -> { Message.count }, -1 do
-      Turbo::StreamsChannel.expects(:broadcast_remove_to).once
+    assert_difference -> { Message.active.count }, -1 do
+      Turbo::StreamsChannel.expects(:broadcast_remove_to).at_least_once
       delete room_message_url(@room, message, format: :turbo_stream)
       assert_response :success
     end

@@ -1,5 +1,5 @@
 import { Head, usePage } from "@inertiajs/react"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { KeyboardEvent, MouseEvent } from "react"
 import { createPortal } from "react-dom"
 import { toast } from "sonner"
@@ -59,9 +59,15 @@ interface FeedLayoutPayload {
   sidebar: string
 }
 
+interface PaginationConfig {
+  initialLimit: number
+  loadMoreLimit: number
+}
+
 interface FeedPageProps {
   cardsByView: CardsByView
   initialView: ViewType
+  pagination: PaginationConfig
   layout: FeedLayoutPayload
   assets?: {
     searchIcon?: string
@@ -322,6 +328,7 @@ function FeedCard({
 export default function FeedIndex({
   cardsByView,
   initialView,
+  pagination,
   layout,
   assets,
   flash,
@@ -335,6 +342,82 @@ export default function FeedIndex({
     new: cardsByView.new ?? [],
   }))
   const [searchRoot, setSearchRoot] = useState<HTMLElement | null>(null)
+  const [pageByView, setPageByView] = useState<Record<ViewType, number>>({
+    top: 1,
+    new: 1,
+  })
+  const [hasMoreByView, setHasMoreByView] = useState<Record<ViewType, boolean>>(
+    {
+      top: (cardsByView.top?.length ?? 0) >= (pagination?.initialLimit ?? 20),
+      new: (cardsByView.new?.length ?? 0) >= (pagination?.initialLimit ?? 20),
+    },
+  )
+  const [isLoading, setIsLoading] = useState(false)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  const loadMoreCards = useCallback(async () => {
+    if (isLoading || !hasMoreByView[view]) return
+
+    setIsLoading(true)
+    const nextPage = pageByView[view] + 1
+
+    try {
+      const response = await fetch(`/?view=${view}&page=${nextPage}`, {
+        headers: {
+          Accept: "application/json",
+        },
+      })
+
+      if (!response.ok) throw new Error("Failed to fetch")
+
+      const data = await response.json()
+      const newCards: FeedCardPayload[] = data.feedCards ?? []
+
+      if (newCards.length > 0) {
+        setCardsState((prev) => ({
+          ...prev,
+          [view]: [...prev[view], ...newCards],
+        }))
+        setPageByView((prev) => ({ ...prev, [view]: nextPage }))
+      }
+
+      setHasMoreByView((prev) => ({
+        ...prev,
+        [view]: data.hasMore ?? false,
+      }))
+    } catch (error) {
+      console.error("Error loading more cards:", error)
+      toast.error("Failed to load more cards")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [view, pageByView, hasMoreByView, isLoading])
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (entry?.isIntersecting && hasMoreByView[view] && !isLoading) {
+          loadMoreCards()
+        }
+      },
+      {
+        rootMargin: "800px",
+        threshold: 0,
+      },
+    )
+
+    const currentRef = loadMoreRef.current
+    if (currentRef) {
+      observer.observe(currentRef)
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef)
+      }
+    }
+  }, [loadMoreCards, hasMoreByView, view, isLoading])
 
   useEffect(() => {
     if (!layout) return
@@ -379,7 +462,12 @@ export default function FeedIndex({
       top: cardsByView.top ?? [],
       new: cardsByView.new ?? [],
     })
-  }, [cardsByView.top, cardsByView.new])
+    setPageByView({ top: 1, new: 1 })
+    setHasMoreByView({
+      top: (cardsByView.top?.length ?? 0) >= (pagination?.initialLimit ?? 20),
+      new: (cardsByView.new?.length ?? 0) >= (pagination?.initialLimit ?? 20),
+    })
+  }, [cardsByView.top, cardsByView.new, pagination?.initialLimit])
 
   const sortedCards = useMemo(() => {
     const selectedCards = cardsState[view] ?? []
@@ -474,9 +562,9 @@ export default function FeedIndex({
         </div>
 
         {sortedCards.length === 0 ? (
-          <div className="bg-background border-input rounded-lg border p-12 text-center">
-            <p className="text-muted-foreground">
-              No feed cards yet. Check back soon!
+          <div className="py-6 text-center">
+            <p className="text-muted-foreground/60 text-xs">
+              Nothing here yet. Check back soon!
             </p>
           </div>
         ) : (
@@ -485,9 +573,46 @@ export default function FeedIndex({
               <FeedCard
                 key={card.id}
                 card={card}
-                isLast={index === sortedCards.length - 1}
+                isLast={
+                  index === sortedCards.length - 1 && !hasMoreByView[view]
+                }
               />
             ))}
+
+            <div ref={loadMoreRef} className="h-px" aria-hidden="true" />
+
+            {isLoading && (
+              <div className="flex items-center justify-center py-4">
+                <svg
+                  className="text-muted-foreground/50 h-4 w-4 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              </div>
+            )}
+
+            {!hasMoreByView[view] && sortedCards.length > 0 && (
+              <div className="py-6 text-center">
+                <p className="text-muted-foreground/60 text-xs">
+                  You've seen everything.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

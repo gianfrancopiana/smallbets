@@ -2,9 +2,12 @@ require "test_helper"
 
 class FirstRunTest < ActiveSupport::TestCase
   setup do
-    Account.destroy_all
+    Boost.destroy_all
+    Message.destroy_all
+    Membership.destroy_all
     Room.destroy_all
     User.destroy_all
+    Account.destroy_all
   end
 
   test "creating makes first user an administrator" do

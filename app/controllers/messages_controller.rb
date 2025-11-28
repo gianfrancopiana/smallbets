@@ -36,11 +36,12 @@ class MessagesController < ApplicationController
   end
 
   def update
+    @message = @message.canonical_message
+    @room = @message.room
     @message.update!(message_params)
 
-    presentation_html = render_to_string(partial: "messages/presentation", locals: { message: @message })
-    @message.broadcast_replace_to @message.room, :messages, target: [ @message, :presentation ], html: presentation_html, attributes: { maintain_scroll: true }
-    @message.broadcast_replace_to :inbox, target: [ @message, :presentation ], html: presentation_html, attributes: { maintain_scroll: true }
+    broadcast_presentation_updates
+    @message.broadcast_replace_to :inbox, target: [ @message, :presentation ], html: render_presentation(@message), attributes: { maintain_scroll: true }
     broadcast_update_message_involvements
     deliver_webhooks_to_bots(@message, :updated)
 
@@ -69,13 +70,14 @@ class MessagesController < ApplicationController
 
 
     def find_paged_messages
+      scoped_messages = @room.messages.with_threads.with_creator.with_canonical_includes
       messages = case
       when params[:before].present?
-        @room.messages.with_threads.with_creator.with_original_message.page_before(@room.messages.find(params[:before]))
+        scoped_messages.page_before(@room.messages.find(params[:before]))
       when params[:after].present?
-        @room.messages.with_threads.with_creator.with_original_message.page_after(@room.messages.find(params[:after]))
+        scoped_messages.page_after(@room.messages.find(params[:after]))
       else
-        @room.messages.with_threads.with_creator.with_original_message.last_page
+        scoped_messages.last_page
       end
 
       # If this is a thread and we've loaded the very first message, prepend the parent message
@@ -100,6 +102,22 @@ class MessagesController < ApplicationController
       @message.mentionees.each do |user|
         refresh_shared_rooms(user)
       end
+    end
+
+    def broadcast_presentation_updates
+      broadcast_to_room(@message)
+      @message.copied_messages.active.includes(:room).find_each do |copied_message|
+        broadcast_to_room(copied_message)
+      end
+    end
+
+    def broadcast_to_room(message)
+      presentation_html = render_presentation(message)
+      message.broadcast_replace_to message.room, :messages, target: [ message, :presentation ], html: presentation_html, attributes: { maintain_scroll: true }
+    end
+
+    def render_presentation(message)
+      render_to_string(partial: "messages/presentation", locals: { message: message })
     end
 
     def refresh_shared_rooms(user)

@@ -245,8 +245,7 @@ class MessageTest < ActiveSupport::TestCase
       original_message: original_message,
       created_at: original_message.created_at,
       updated_at: original_message.updated_at,
-      client_message_id: original_message.client_message_id,
-      body: original_message.body
+      client_message_id: original_message.client_message_id
     )
     
     assert original_message.active?
@@ -277,8 +276,7 @@ class MessageTest < ActiveSupport::TestCase
       original_message: original_message,
       created_at: original_message.created_at,
       updated_at: original_message.updated_at,
-      client_message_id: original_message.client_message_id,
-      body: original_message.body
+      client_message_id: original_message.client_message_id
     )
     
     # Deactivate both messages

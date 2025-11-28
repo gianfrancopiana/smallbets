@@ -16,9 +16,9 @@ class Rooms::ClosedsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create" do
-    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 1 do
-    assert_turbo_stream_broadcasts [ users(:kevin), :rooms ], count: 1 do
-    assert_turbo_stream_broadcasts [ users(:jason), :rooms ], count: 1 do
+    assert_turbo_stream_broadcasts [ users(:david), :rooms ], count: 2 do
+    assert_turbo_stream_broadcasts [ users(:kevin), :rooms ], count: 2 do
+    assert_turbo_stream_broadcasts [ users(:jason), :rooms ], count: 2 do
       post rooms_closeds_url, params: { room: { name: "My New Room" }, user_ids: [ users(:david).id, users(:kevin).id, users(:jason).id ] }
     end
     end

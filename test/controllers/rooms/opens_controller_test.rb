@@ -1,6 +1,8 @@
 require "test_helper"
 
 class Rooms::OpensControllerTest < ActionDispatch::IntegrationTest
+  include ActiveJob::TestHelper
+
   setup do
     sign_in :david
   end
@@ -16,7 +18,7 @@ class Rooms::OpensControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create" do
-    assert_turbo_stream_broadcasts :rooms, count: 1 do
+    assert_turbo_stream_broadcasts :rooms, count: 2 do
       post rooms_opens_url, params: { room: { name: "My New Room" } }
     end
 
@@ -36,7 +38,7 @@ class Rooms::OpensControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "update" do
-    assert_turbo_stream_broadcasts :rooms, count: 1 do
+    assert_enqueued_with(job: RoomUpdateBroadcastJob, args: [rooms(:pets)]) do
       put rooms_open_url(rooms(:pets)), params: { room: { name: "New Name" } }
     end
 

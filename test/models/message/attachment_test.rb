@@ -10,6 +10,8 @@ class Message::AttachmentTest < ActiveSupport::TestCase
   end
 
   test "creating a message creates video preview" do
+    skip "FFmpeg not available" unless ffmpeg_available?
+
     message = create_attachment_message("alpha-centuri.mov", "video/quicktime")
     assert message.reload.attachment.preview(format: :webp).image.attached?
   end
@@ -26,5 +28,9 @@ class Message::AttachmentTest < ActiveSupport::TestCase
         creator: users(:david),
         client_message_id: "message",
         attachment: fixture_file_upload(file, content_type)
+    end
+
+    def ffmpeg_available?
+      system("which ffmpeg > /dev/null 2>&1")
     end
 end
