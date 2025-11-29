@@ -14,25 +14,16 @@ declare global {
   }
 }
 
-// Handle non-Inertia responses by doing a full page reload instead of showing the error iframe
-// This happens when navigating back/forward to a non-Inertia (Turbo) page
 function setupInertiaEventHandlers() {
-  // Prevent duplicate registration
-  if (window.__sbInertiaHandlersAttached) {
-    return
-  }
+  if (window.__sbInertiaHandlersAttached) return
   window.__sbInertiaHandlersAttached = true
 
-  // The 'invalid' event fires when Inertia receives a non-Inertia response (e.g., full HTML)
-  // By calling preventDefault and doing a full page reload, we prevent Inertia's default
-  // behavior of showing the response in an iframe modal
+  // Reload on non-Inertia responses instead of showing error iframe
   router.on("invalid", (event) => {
     event.preventDefault()
-    // Use location.reload() for back/forward navigation to get fresh content
     window.location.reload()
   })
 
-  // The 'exception' event fires on unexpected errors - also do a full page reload
   router.on("exception", (event) => {
     event.preventDefault()
     window.location.reload()
@@ -216,24 +207,14 @@ function boot() {
   bootToaster()
 }
 
-// Boot on initial page load
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", boot)
 } else {
   boot()
 }
 
-// Also boot after Turbo navigations - this handles the case where user is on a Turbo page
-// and clicks a link to an Inertia page. Turbo will swap the body, but the Inertia app
-// needs to be booted since DOMContentLoaded won't fire again.
 document.addEventListener("turbo:load", boot)
 
-// Handle browser back-forward cache (bfcache) restoration
-// When a page is restored from bfcache, the JavaScript state might be stale
-// Force a reload to ensure fresh content
 window.addEventListener("pageshow", (event) => {
-  if (event.persisted) {
-    // Page was restored from bfcache - reload to get fresh state
-    window.location.reload()
-  }
+  if (event.persisted) window.location.reload()
 })
