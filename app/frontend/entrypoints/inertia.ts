@@ -1,10 +1,43 @@
-import { createInertiaApp } from "@inertiajs/react"
+import { createInertiaApp, router } from "@inertiajs/react"
 import { createElement, ReactNode } from "react"
 import { createRoot } from "react-dom/client"
 import type { Root } from "react-dom/client"
 import { toast } from "sonner"
 
 import { Toaster } from "../components/ui/sonner"
+
+declare global {
+  interface Window {
+    __sbToastListenerAttached?: boolean
+    __sb_page_boot_ts?: number
+    __sbInertiaHandlersAttached?: boolean
+  }
+}
+
+// Handle non-Inertia responses by doing a full page reload instead of showing the error iframe
+// This happens when navigating back/forward to a non-Inertia (Turbo) page
+function setupInertiaEventHandlers() {
+  // Prevent duplicate registration
+  if (window.__sbInertiaHandlersAttached) {
+    return
+  }
+  window.__sbInertiaHandlersAttached = true
+
+  // The 'invalid' event fires when Inertia receives a non-Inertia response (e.g., full HTML)
+  // By calling preventDefault and doing a full page reload, we prevent Inertia's default
+  // behavior of showing the response in an iframe modal
+  router.on("invalid", (event) => {
+    event.preventDefault()
+    // Use location.reload() for back/forward navigation to get fresh content
+    window.location.reload()
+  })
+
+  // The 'exception' event fires on unexpected errors - also do a full page reload
+  router.on("exception", (event) => {
+    event.preventDefault()
+    window.location.reload()
+  })
+}
 
 // Temporary type definition, until @inertiajs/react provides one
 type ResolvedComponent = {
@@ -19,17 +52,9 @@ interface ToastEventDetail {
   type?: ToastVariant
 }
 
-declare global {
-  interface Window {
-    __sbToastListenerAttached?: boolean
-    __sb_page_boot_ts?: number
-  }
-}
-
 const TOAST_EVENT = "toast:show"
 
 let toastRoot: Root | null = null
-let toastContainer: HTMLElement | null = null
 
 function bootInertiaApp() {
   const mount = document.getElementById("app") as HTMLElement | null
@@ -80,14 +105,6 @@ function bootInertiaApp() {
       const root = createRoot(el)
       root.render(createElement(App, props))
       mount.dataset.inertiaMounted = "true"
-
-      const handleBeforeCache = () => {
-        root.unmount()
-        delete mount.dataset.inertiaMounted
-        document.removeEventListener("turbo:before-cache", handleBeforeCache)
-      }
-
-      document.addEventListener("turbo:before-cache", handleBeforeCache)
     },
   }).catch((error) => {
     console.error("[Inertia] Failed to bootstrap page", error)
@@ -103,8 +120,6 @@ function mountToaster() {
     return
   }
 
-  toastContainer = container
-
   if (container.dataset.reactMounted === "true" && toastRoot) {
     return
   }
@@ -112,18 +127,6 @@ function mountToaster() {
   toastRoot = createRoot(container)
   toastRoot.render(createElement(Toaster))
   container.dataset.reactMounted = "true"
-}
-
-function teardownToaster() {
-  if (toastRoot) {
-    toastRoot.unmount()
-    toastRoot = null
-  }
-
-  if (toastContainer) {
-    delete toastContainer.dataset.reactMounted
-    toastContainer = null
-  }
 }
 
 function showToast(message: string, type: ToastVariant = "success") {
@@ -208,17 +211,29 @@ function bootToaster() {
 }
 
 function boot() {
+  setupInertiaEventHandlers()
   bootInertiaApp()
   bootToaster()
 }
 
+// Boot on initial page load
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", boot)
 } else {
   boot()
 }
 
+// Also boot after Turbo navigations - this handles the case where user is on a Turbo page
+// and clicks a link to an Inertia page. Turbo will swap the body, but the Inertia app
+// needs to be booted since DOMContentLoaded won't fire again.
 document.addEventListener("turbo:load", boot)
-document.addEventListener("turbo:before-cache", () => {
-  teardownToaster()
+
+// Handle browser back-forward cache (bfcache) restoration
+// When a page is restored from bfcache, the JavaScript state might be stale
+// Force a reload to ensure fresh content
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    // Page was restored from bfcache - reload to get fresh state
+    window.location.reload()
+  }
 })

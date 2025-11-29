@@ -1,5 +1,6 @@
 class FeedController < AuthenticatedController
   include RoomParticipants
+  layout "inertia_app"
 
   INITIAL_CARDS_LIMIT = 20
   LOAD_MORE_LIMIT = 30
