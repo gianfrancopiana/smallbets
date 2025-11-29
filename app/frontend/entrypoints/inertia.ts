@@ -1,10 +1,34 @@
-import { createInertiaApp } from "@inertiajs/react"
+import { createInertiaApp, router } from "@inertiajs/react"
 import { createElement, ReactNode } from "react"
 import { createRoot } from "react-dom/client"
 import type { Root } from "react-dom/client"
 import { toast } from "sonner"
 
 import { Toaster } from "../components/ui/sonner"
+
+declare global {
+  interface Window {
+    __sbToastListenerAttached?: boolean
+    __sb_page_boot_ts?: number
+    __sbInertiaHandlersAttached?: boolean
+  }
+}
+
+function setupInertiaEventHandlers() {
+  if (window.__sbInertiaHandlersAttached) return
+  window.__sbInertiaHandlersAttached = true
+
+  // Reload on non-Inertia responses instead of showing error iframe
+  router.on("invalid", (event) => {
+    event.preventDefault()
+    window.location.reload()
+  })
+
+  router.on("exception", (event) => {
+    event.preventDefault()
+    window.location.reload()
+  })
+}
 
 // Temporary type definition, until @inertiajs/react provides one
 type ResolvedComponent = {
@@ -19,17 +43,9 @@ interface ToastEventDetail {
   type?: ToastVariant
 }
 
-declare global {
-  interface Window {
-    __sbToastListenerAttached?: boolean
-    __sb_page_boot_ts?: number
-  }
-}
-
 const TOAST_EVENT = "toast:show"
 
 let toastRoot: Root | null = null
-let toastContainer: HTMLElement | null = null
 
 function bootInertiaApp() {
   const mount = document.getElementById("app") as HTMLElement | null
@@ -80,14 +96,6 @@ function bootInertiaApp() {
       const root = createRoot(el)
       root.render(createElement(App, props))
       mount.dataset.inertiaMounted = "true"
-
-      const handleBeforeCache = () => {
-        root.unmount()
-        delete mount.dataset.inertiaMounted
-        document.removeEventListener("turbo:before-cache", handleBeforeCache)
-      }
-
-      document.addEventListener("turbo:before-cache", handleBeforeCache)
     },
   }).catch((error) => {
     console.error("[Inertia] Failed to bootstrap page", error)
@@ -103,8 +111,6 @@ function mountToaster() {
     return
   }
 
-  toastContainer = container
-
   if (container.dataset.reactMounted === "true" && toastRoot) {
     return
   }
@@ -112,18 +118,6 @@ function mountToaster() {
   toastRoot = createRoot(container)
   toastRoot.render(createElement(Toaster))
   container.dataset.reactMounted = "true"
-}
-
-function teardownToaster() {
-  if (toastRoot) {
-    toastRoot.unmount()
-    toastRoot = null
-  }
-
-  if (toastContainer) {
-    delete toastContainer.dataset.reactMounted
-    toastContainer = null
-  }
 }
 
 function showToast(message: string, type: ToastVariant = "success") {
@@ -208,6 +202,7 @@ function bootToaster() {
 }
 
 function boot() {
+  setupInertiaEventHandlers()
   bootInertiaApp()
   bootToaster()
 }
@@ -219,6 +214,7 @@ if (document.readyState === "loading") {
 }
 
 document.addEventListener("turbo:load", boot)
-document.addEventListener("turbo:before-cache", () => {
-  teardownToaster()
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) window.location.reload()
 })

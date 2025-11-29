@@ -1,4 +1,6 @@
 class LibraryController < AuthenticatedController
+  layout "inertia_app"
+
   def index
     @page_title = "Library"
     @body_class = "library-collapsed"
