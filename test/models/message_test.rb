@@ -67,6 +67,64 @@ class MessageTest < ActiveSupport::TestCase
     assert_equal [], message_mentioning_a_non_member.mentionees
   end
 
+  test "referenced messages do not duplicate mention notifications" do
+    room = rooms(:pets)
+    mentionee = users(:david)
+    creator = users(:jason)
+    conversation_room = Rooms::Open.create!(name: "Digest", source_room: room, creator: creator)
+    conversation_room.memberships.grant_to(room.users)
+
+    body_html = "<div>Hey #{mention_attachment_for(:david)}</div>"
+    original = room.messages.create!(creator: creator, body: body_html, client_message_id: SecureRandom.uuid)
+
+    reference_message = nil
+
+    assert_no_difference "Mention.count" do
+      reference_message = conversation_room.messages.create!(
+        creator: creator,
+        original_message: original,
+        client_message_id: original.client_message_id,
+        created_at: original.created_at,
+        updated_at: original.updated_at,
+        mentions_everyone: original.mentions_everyone
+      )
+
+      assert_equal 0, reference_message.mentions.count
+      membership = conversation_room.memberships.find_by(user: mentionee)
+      assert_not_nil membership
+      assert membership.reload.unread_notifications.none?
+      assert_not membership.has_unread_notifications?
+    end
+
+    assert reference_message.copy?
+  end
+
+  test "referenced everyone messages do not broadcast notifications" do
+    room = rooms(:pets)
+    admin = users(:jason)
+    conversation_room = Rooms::Open.create!(name: "Digest", source_room: room, creator: admin)
+    conversation_room.memberships.grant_to(room.users)
+
+    everyone_sgid = Everyone.new.attachable_sgid
+    body_html = "<div><action-text-attachment sgid=\"#{everyone_sgid}\" content-type=\"application/vnd.campfire.mention\"></action-text-attachment></div>"
+
+    original = room.messages.create!(creator: admin, body: body_html, client_message_id: SecureRandom.uuid)
+
+    reference_message = conversation_room.messages.create!(
+      creator: admin,
+      original_message: original,
+      client_message_id: original.client_message_id,
+      mentions_everyone: original.mentions_everyone,
+      created_at: original.created_at,
+      updated_at: original.updated_at
+    )
+
+    target_user = users(:david)
+    assert_no_broadcasts("user_#{target_user.id}_notifications") do
+      reference_message.broadcast_notifications
+    end
+  end
+
   test "deactivating message clears unread timestamps pointing to it" do
     room = rooms(:pets)
     user = users(:david)
